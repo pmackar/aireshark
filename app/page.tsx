@@ -1,6 +1,36 @@
 import Link from "next/link";
+import prisma from "@/lib/db";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  // Fetch real data from database
+  const [firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions] =
+    await Promise.all([
+      prisma.privateEquityFirm.count(),
+      prisma.brand.count(),
+      prisma.acquisition.count(),
+      prisma.privateEquityFirm.findMany({
+        take: 3,
+        include: {
+          _count: {
+            select: { brands: true },
+          },
+        },
+        orderBy: {
+          brands: { _count: "desc" },
+        },
+      }),
+      prisma.acquisition.findMany({
+        take: 5,
+        include: {
+          privateEquityFirm: true,
+          brand: true,
+        },
+        orderBy: { date: "desc" },
+      }),
+    ]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Hero Section */}
@@ -9,17 +39,31 @@ export default function Home() {
           Private Equity in HVAC
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Track acquisitions, ownership, and industry consolidation in the residential
-          heating and air conditioning market.
+          Track acquisitions, ownership, and industry consolidation in the
+          residential heating and air conditioning market.
         </p>
+        <div className="mt-8 flex justify-center gap-4">
+          <Link
+            href="/firms"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Explore PE Firms
+          </Link>
+          <Link
+            href="/brands"
+            className="bg-white text-gray-700 px-6 py-3 rounded-lg border hover:bg-gray-50 transition-colors"
+          >
+            View Brands
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-        <StatCard label="PE Firms Tracked" value="8" />
-        <StatCard label="Brands Acquired" value="150+" />
-        <StatCard label="Total Deal Value" value="$2.5B+" />
-        <StatCard label="Active Since" value="2018" />
+        <StatCard label="PE Firms Tracked" value={firmCount.toString()} />
+        <StatCard label="Brands Acquired" value={brandCount.toString()} />
+        <StatCard label="Acquisitions" value={acquisitionCount.toString()} />
+        <StatCard label="Industry" value="HVAC" />
       </div>
 
       {/* Top PE Firms */}
@@ -30,23 +74,34 @@ export default function Home() {
             View all →
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PEFirmCard
-            name="Apex Service Partners"
-            acquisitions={45}
-            slug="apex-service-partners"
-          />
-          <PEFirmCard
-            name="Wrench Group (Kohlberg)"
-            acquisitions={32}
-            slug="wrench-group"
-          />
-          <PEFirmCard
-            name="Redwood Services"
-            acquisitions={28}
-            slug="redwood-services"
-          />
-        </div>
+        {topFirms.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {topFirms.map((firm) => (
+              <Link key={firm.id} href={`/firms/${firm.slug}`}>
+                <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer h-full">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {firm.name}
+                  </h3>
+                  <p className="text-gray-500">
+                    {firm._count.brands} brands owned
+                  </p>
+                  {firm.headquarters && (
+                    <p className="text-sm text-gray-400 mt-2">
+                      {firm.headquarters}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-500 mb-4">No PE firms in database yet.</p>
+            <code className="text-sm bg-gray-100 px-3 py-1 rounded">
+              npm run db:seed
+            </code>
+          </div>
+        )}
       </section>
 
       {/* Recent Acquisitions */}
@@ -54,45 +109,92 @@ export default function Home() {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           Recent Acquisitions
         </h2>
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Brand
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  PE Firm
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Deal Value
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <AcquisitionRow
-                brand="ABC Heating & Air"
-                peFirm="Apex Service Partners"
-                date="Dec 2024"
-                value="Undisclosed"
-              />
-              <AcquisitionRow
-                brand="Comfort Pro HVAC"
-                peFirm="Wrench Group"
-                date="Nov 2024"
-                value="$15M"
-              />
-              <AcquisitionRow
-                brand="Metro Climate Control"
-                peFirm="Redwood Services"
-                date="Oct 2024"
-                value="Undisclosed"
-              />
-            </tbody>
-          </table>
+        {recentAcquisitions.length > 0 ? (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Brand
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    PE Firm
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Deal Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {recentAcquisitions.map((acq) => (
+                  <tr key={acq.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {acq.brand ? (
+                        <Link
+                          href={`/brands/${acq.brand.slug}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {acq.brand.name}
+                        </Link>
+                      ) : (
+                        "Unknown"
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <Link
+                        href={`/firms/${acq.privateEquityFirm.slug}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {acq.privateEquityFirm.name}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(acq.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {acq.amount || "Undisclosed"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-500">No acquisitions recorded yet.</p>
+          </div>
+        )}
+      </section>
+
+      {/* CTA Section */}
+      <section className="mt-16 bg-blue-50 rounded-lg p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Stay Informed
+        </h2>
+        <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+          This tracker monitors private equity activity in the HVAC industry,
+          automatically scraping news sources and PE firm portfolios for the
+          latest acquisition data.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link
+            href="/firms"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Browse PE Firms
+          </Link>
+          <Link
+            href="/brands"
+            className="bg-white text-gray-700 px-6 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+          >
+            View All Brands
+          </Link>
         </div>
       </section>
     </div>
@@ -105,49 +207,5 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <p className="text-3xl font-bold text-gray-900">{value}</p>
       <p className="text-gray-500">{label}</p>
     </div>
-  );
-}
-
-function PEFirmCard({
-  name,
-  acquisitions,
-  slug,
-}: {
-  name: string;
-  acquisitions: number;
-  slug: string;
-}) {
-  return (
-    <Link href={`/firms/${slug}`}>
-      <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{name}</h3>
-        <p className="text-gray-500">{acquisitions} acquisitions</p>
-      </div>
-    </Link>
-  );
-}
-
-function AcquisitionRow({
-  brand,
-  peFirm,
-  date,
-  value,
-}: {
-  brand: string;
-  peFirm: string;
-  date: string;
-  value: string;
-}) {
-  return (
-    <tr>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {brand}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {peFirm}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{date}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{value}</td>
-    </tr>
   );
 }
