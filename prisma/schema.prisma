@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model PrivateEquityFirm {
+  id                    String   @id @default(cuid())
+  name                  String   @unique
+  slug                  String   @unique
+  description           String?  @db.Text
+  website               String?
+  logoUrl               String?
+  headquarters          String?
+  foundedYear           Int?
+  assetsUnderManagement String?  // e.g., "$5B+"
+
+  brands       Brand[]
+  acquisitions Acquisition[]
+  articles     Article[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model Brand {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  website         String?
+  logoUrl         String?
+  description     String?  @db.Text
+  location        String?  // City, State
+  serviceArea     String?  // e.g., "Southeast US"
+  acquisitionDate DateTime?
+  acquisitionPrice String? // e.g., "$15M" or "Undisclosed"
+
+  privateEquityFirm   PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id])
+  privateEquityFirmId String?
+
+  acquisitions Acquisition[]
+  articles     Article[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([privateEquityFirmId])
+}
+
+model Acquisition {
+  id        String   @id @default(cuid())
+  date      DateTime
+  amount    String?  // e.g., "$15M" or "Undisclosed"
+  dealType  String   @default("acquisition") // acquisition, merger, investment
+  sourceUrl String?
+  sourceTitle String?
+  notes     String?  @db.Text
+
+  privateEquityFirm   PrivateEquityFirm @relation(fields: [privateEquityFirmId], references: [id])
+  privateEquityFirmId String
+
+  brand   Brand?  @relation(fields: [brandId], references: [id])
+  brandId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([privateEquityFirmId])
+  @@index([brandId])
+  @@index([date])
+}
+
+model Article {
+  id            String    @id @default(cuid())
+  title         String
+  url           String    @unique
+  source        String    // e.g., "ACHR News", "Business Wire"
+  publishedDate DateTime?
+  summary       String?   @db.Text
+  imageUrl      String?
+
+  privateEquityFirm   PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id])
+  privateEquityFirmId String?
+
+  brand   Brand?  @relation(fields: [brandId], references: [id])
+  brandId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([privateEquityFirmId])
+  @@index([brandId])
+  @@index([publishedDate])
+}

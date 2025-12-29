@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron?type=daily",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron?type=weekly",
+      "schedule": "0 7 * * 0"
+    }
+  ],
+  "functions": {
+    "app/api/cron/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/scrape/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
