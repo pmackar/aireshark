@@ -48,6 +48,7 @@ model Platform {
   isActive              Boolean  @default(true)
   notes                 String?  @db.Text
   lastScrapedAt         DateTime?
+  lastBrandSnapshot     Json?    // Stores brand list for diff detection
 
   privateEquityFirm   PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id])
   privateEquityFirmId String?

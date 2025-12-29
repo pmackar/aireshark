@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron?type=daily",
-      "schedule": "0 6 * * *"
+      "schedule": "0 */6 * * *"
     },
     {
       "path": "/api/cron?type=weekly",
-      "schedule": "0 7 * * 0"
+      "schedule": "0 8 * * 1"
     }
   ],
   "functions": {

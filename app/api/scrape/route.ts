@@ -4,6 +4,9 @@ import {
   runNewsScrapeOnly,
   runGoogleScrapeOnly,
   runPortfolioScrapeOnly,
+  runRssScrapeOnly,
+  runPlatformMonitorOnly,
+  runGmailScrapeOnly,
 } from "@/lib/scraper";
 
 const SESSION_COOKIE_NAME = "admin_session";
@@ -84,6 +87,21 @@ export async function POST(request: NextRequest) {
         result = await runPortfolioScrapeOnly();
         break;
 
+      case "rss":
+        console.log("Running RSS feed scraper only...");
+        result = await runRssScrapeOnly();
+        break;
+
+      case "platforms":
+        console.log("Running platform monitor only...");
+        result = await runPlatformMonitorOnly();
+        break;
+
+      case "gmail":
+        console.log("Running Gmail alerts scraper only...");
+        result = await runGmailScrapeOnly();
+        break;
+
       case "all":
       default:
         console.log("Running all scrapers...");
@@ -118,10 +136,10 @@ export async function GET(request: NextRequest) {
   // GET request returns scraper status/info
   return NextResponse.json({
     status: "ready",
-    availableTypes: ["all", "news", "google", "portfolio"],
+    availableTypes: ["all", "news", "google", "portfolio", "rss", "platforms", "gmail"],
     usage: {
       method: "POST",
-      body: { type: "all | news | google | portfolio" },
+      body: { type: "all | news | google | portfolio | rss | platforms | gmail" },
       headers: { "x-api-key": "your-api-key (if SCRAPER_API_KEY is set)" },
     },
     endpoints: {

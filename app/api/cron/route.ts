@@ -3,6 +3,10 @@ import {
   runAllScrapers,
   runNewsScrapeOnly,
   runPortfolioScrapeOnly,
+  runRssScrapeOnly,
+  runGmailScrapeOnly,
+  runPlatformMonitorOnly,
+  isGmailConfigured,
 } from "@/lib/scraper";
 
 // Verify the request is from Vercel Cron - REQUIRES secret in production
@@ -39,17 +43,67 @@ export async function GET(request: NextRequest) {
     let result;
 
     switch (type) {
-      case "daily":
-        // Daily: Run news scrapers
-        console.log("Running daily news scrape...");
-        result = await runNewsScrapeOnly();
-        break;
+      case "daily": {
+        // Daily: Run RSS feeds, Gmail alerts, news scrapers
+        console.log("Running daily scrape (RSS, Gmail, News)...");
+        const dailyResults: Record<string, unknown> = {};
 
-      case "weekly":
-        // Weekly: Run portfolio scrapers
-        console.log("Running weekly portfolio scrape...");
-        result = await runPortfolioScrapeOnly();
+        // RSS feeds
+        try {
+          dailyResults.rss = await runRssScrapeOnly();
+        } catch (e) {
+          console.error("RSS scrape failed:", e);
+          dailyResults.rss = { error: String(e) };
+        }
+
+        // Gmail alerts (if configured)
+        if (isGmailConfigured()) {
+          try {
+            dailyResults.gmail = await runGmailScrapeOnly();
+          } catch (e) {
+            console.error("Gmail scrape failed:", e);
+            dailyResults.gmail = { error: String(e) };
+          }
+        } else {
+          dailyResults.gmail = { skipped: "Gmail not configured" };
+        }
+
+        // News scraper
+        try {
+          dailyResults.news = await runNewsScrapeOnly();
+        } catch (e) {
+          console.error("News scrape failed:", e);
+          dailyResults.news = { error: String(e) };
+        }
+
+        result = dailyResults;
         break;
+      }
+
+      case "weekly": {
+        // Weekly: Run platform monitoring and portfolio scrapers
+        console.log("Running weekly scrape (platforms, portfolio)...");
+        const weeklyResults: Record<string, unknown> = {};
+
+        // Platform monitoring with diff detection
+        try {
+          weeklyResults.platforms = await runPlatformMonitorOnly();
+        } catch (e) {
+          console.error("Platform monitor failed:", e);
+          weeklyResults.platforms = { error: String(e) };
+        }
+
+        // Legacy portfolio scraper
+        try {
+          weeklyResults.portfolio = await runPortfolioScrapeOnly();
+        } catch (e) {
+          console.error("Portfolio scrape failed:", e);
+          weeklyResults.portfolio = { error: String(e) };
+        }
+
+        result = weeklyResults;
+        break;
+      }
 
       case "full":
         // Full scrape (manual trigger or monthly)

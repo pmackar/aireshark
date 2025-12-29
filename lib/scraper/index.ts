@@ -2,6 +2,9 @@ import { closeBrowser } from "./browser";
 import { runNewsScraper } from "./sources/news";
 import { runGoogleNewsScraper } from "./sources/google-news";
 import { runPortfolioScraper } from "./sources/portfolio";
+import { runRssFeedScraper } from "./sources/rss-feeds";
+import { runPlatformMonitor } from "./sources/platform-monitor";
+import { runGmailAlertsScraper, isGmailConfigured } from "./sources/gmail-alerts";
 
 export interface ScraperResult {
   news: {
@@ -9,6 +12,10 @@ export interface ScraperResult {
     articlesStored: number;
   };
   google: {
+    articlesFound: number;
+    articlesStored: number;
+  };
+  rss: {
     articlesFound: number;
     articlesStored: number;
   };
@@ -27,6 +34,7 @@ export async function runAllScrapers(): Promise<ScraperResult> {
 
   let newsResult = { articlesFound: 0, articlesStored: 0 };
   let googleResult = { articlesFound: 0, articlesStored: 0 };
+  let rssResult = { articlesFound: 0, articlesStored: 0 };
   let portfolioResult = { firmsScraped: 0, totalBrandsFound: 0, totalBrandsAdded: 0 };
 
   try {
@@ -50,6 +58,20 @@ export async function runAllScrapers(): Promise<ScraperResult> {
       errors.push(msg);
     }
 
+    // Run RSS feed scraper
+    try {
+      const rssFullResult = await runRssFeedScraper();
+      rssResult = {
+        articlesFound: rssFullResult.totalArticlesFound,
+        articlesStored: rssFullResult.totalArticlesStored,
+      };
+      errors.push(...rssFullResult.errors);
+    } catch (error) {
+      const msg = `RSS scraper error: ${error}`;
+      console.error(msg);
+      errors.push(msg);
+    }
+
     // Run portfolio scraper
     try {
       portfolioResult = await runPortfolioScraper();
@@ -68,6 +90,7 @@ export async function runAllScrapers(): Promise<ScraperResult> {
   return {
     news: newsResult,
     google: googleResult,
+    rss: rssResult,
     portfolio: portfolioResult,
     duration: Date.now() - startTime,
     errors,
@@ -117,7 +140,62 @@ export async function runPortfolioScrapeOnly(): Promise<{
   }
 }
 
+export async function runRssScrapeOnly(): Promise<{
+  totalArticlesFound: number;
+  totalArticlesStored: number;
+  feedResults: Array<{ feedName: string; articlesFound: number; articlesStored: number }>;
+  duration: number;
+}> {
+  const startTime = Date.now();
+  try {
+    const result = await runRssFeedScraper();
+    return { ...result, duration: Date.now() - startTime };
+  } finally {
+    await closeBrowser();
+  }
+}
+
+export async function runPlatformMonitorOnly(): Promise<{
+  platformsMonitored: number;
+  totalBrandsFound: number;
+  totalBrandsAdded: number;
+  totalBrandsRemoved: number;
+  duration: number;
+}> {
+  const startTime = Date.now();
+  try {
+    const result = await runPlatformMonitor();
+    return {
+      platformsMonitored: result.platformsMonitored,
+      totalBrandsFound: result.totalBrandsFound,
+      totalBrandsAdded: result.totalBrandsAdded,
+      totalBrandsRemoved: result.totalBrandsRemoved,
+      duration: Date.now() - startTime,
+    };
+  } finally {
+    await closeBrowser();
+  }
+}
+
+export async function runGmailScrapeOnly(): Promise<{
+  emailsProcessed: number;
+  articlesFound: number;
+  articlesStored: number;
+  duration: number;
+}> {
+  const startTime = Date.now();
+  try {
+    const result = await runGmailAlertsScraper();
+    return { ...result, duration: Date.now() - startTime };
+  } finally {
+    await closeBrowser();
+  }
+}
+
 // Export individual components for use elsewhere
 export { extractFromArticle, classifyArticleRelevance } from "./extractor";
 export { scrapePageContent } from "./browser";
 export { updateFirmPortfolio } from "./sources/portfolio";
+export { runRssFeedScraper } from "./sources/rss-feeds";
+export { runPlatformMonitor, monitorPlatform } from "./sources/platform-monitor";
+export { runGmailAlertsScraper, isGmailConfigured } from "./sources/gmail-alerts";
