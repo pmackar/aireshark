@@ -3,33 +3,49 @@ import prisma from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  // Fetch real data from database
-  const [firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions] =
-    await Promise.all([
-      prisma.privateEquityFirm.count(),
-      prisma.brand.count(),
-      prisma.acquisition.count(),
-      prisma.privateEquityFirm.findMany({
-        take: 3,
-        include: {
-          _count: {
-            select: { brands: true },
+async function getData() {
+  try {
+    const [firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions] =
+      await Promise.all([
+        prisma.privateEquityFirm.count(),
+        prisma.brand.count(),
+        prisma.acquisition.count(),
+        prisma.privateEquityFirm.findMany({
+          take: 3,
+          include: {
+            _count: {
+              select: { brands: true },
+            },
           },
-        },
-        orderBy: {
-          brands: { _count: "desc" },
-        },
-      }),
-      prisma.acquisition.findMany({
-        take: 5,
-        include: {
-          privateEquityFirm: true,
-          brand: true,
-        },
-        orderBy: { date: "desc" },
-      }),
-    ]);
+          orderBy: {
+            brands: { _count: "desc" },
+          },
+        }),
+        prisma.acquisition.findMany({
+          take: 5,
+          include: {
+            privateEquityFirm: true,
+            brand: true,
+          },
+          orderBy: { date: "desc" },
+        }),
+      ]);
+    return { firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions };
+  } catch {
+    // Database not configured - return empty data
+    return {
+      firmCount: 0,
+      brandCount: 0,
+      acquisitionCount: 0,
+      topFirms: [],
+      recentAcquisitions: [],
+    };
+  }
+}
+
+export default async function Home() {
+  const { firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions } =
+    await getData();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

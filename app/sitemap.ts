@@ -4,17 +4,7 @@ import prisma from "@/lib/db";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://hvac-pe-tracker.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Get all PE firms
-  const firms = await prisma.privateEquityFirm.findMany({
-    select: { slug: true, updatedAt: true },
-  });
-
-  // Get all brands
-  const brands = await prisma.brand.findMany({
-    select: { slug: true, updatedAt: true },
-  });
-
-  // Static pages
+  // Static pages (always included)
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
@@ -36,21 +26,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // PE firm pages
-  const firmPages: MetadataRoute.Sitemap = firms.map((firm) => ({
-    url: `${siteUrl}/firms/${firm.slug}`,
-    lastModified: firm.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  try {
+    // Get all PE firms
+    const firms = await prisma.privateEquityFirm.findMany({
+      select: { slug: true, updatedAt: true },
+    });
 
-  // Brand pages
-  const brandPages: MetadataRoute.Sitemap = brands.map((brand) => ({
-    url: `${siteUrl}/brands/${brand.slug}`,
-    lastModified: brand.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+    // Get all brands
+    const brands = await prisma.brand.findMany({
+      select: { slug: true, updatedAt: true },
+    });
 
-  return [...staticPages, ...firmPages, ...brandPages];
+    // PE firm pages
+    const firmPages: MetadataRoute.Sitemap = firms.map((firm) => ({
+      url: `${siteUrl}/firms/${firm.slug}`,
+      lastModified: firm.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+    // Brand pages
+    const brandPages: MetadataRoute.Sitemap = brands.map((brand) => ({
+      url: `${siteUrl}/brands/${brand.slug}`,
+      lastModified: brand.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticPages, ...firmPages, ...brandPages];
+  } catch {
+    // Database not available - return only static pages
+    return staticPages;
+  }
 }
