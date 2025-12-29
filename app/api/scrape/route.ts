@@ -6,18 +6,54 @@ import {
   runPortfolioScrapeOnly,
 } from "@/lib/scraper";
 
-// Simple API key authentication
+const SESSION_COOKIE_NAME = "admin_session";
+
+// Check if user has valid admin session
+function hasValidAdminSession(request: NextRequest): boolean {
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+
+  // In production, require password to be configured
+  if (!passwordHash || passwordHash.trim() === "") {
+    const host = request.headers.get("host") || "";
+    // Only allow session-based auth in development
+    if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
+      return false;
+    }
+  }
+
+  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME);
+  return !!sessionToken?.value;
+}
+
+// Authentication - API key OR valid admin session
 function isAuthorized(request: NextRequest): boolean {
+  // Check API key first
   const apiKey = request.headers.get("x-api-key");
   const expectedKey = process.env.SCRAPER_API_KEY;
 
-  // If no key is configured, allow requests (for development)
-  if (!expectedKey) {
-    console.warn("SCRAPER_API_KEY not set - allowing unauthenticated access");
+  if (expectedKey && expectedKey.trim() !== "" && apiKey === expectedKey) {
     return true;
   }
 
-  return apiKey === expectedKey;
+  // Check for valid admin session (from /admin dashboard)
+  if (hasValidAdminSession(request)) {
+    return true;
+  }
+
+  // In development without keys, allow localhost access
+  const host = request.headers.get("host") || "";
+  if (host.includes("localhost") || host.includes("127.0.0.1")) {
+    const hasApiKey = expectedKey && expectedKey.trim() !== "";
+    const hasPasswordHash = process.env.ADMIN_PASSWORD_HASH && process.env.ADMIN_PASSWORD_HASH.trim() !== "";
+
+    // Only allow if no auth is configured at all (pure development)
+    if (!hasApiKey && !hasPasswordHash) {
+      console.warn("No auth configured - allowing localhost access");
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export async function POST(request: NextRequest) {

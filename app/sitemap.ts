@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import prisma from "@/lib/db";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://hvac-pe-tracker.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aireshark.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages (always included)

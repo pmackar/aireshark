@@ -5,17 +5,24 @@ import {
   runPortfolioScrapeOnly,
 } from "@/lib/scraper";
 
-// Verify the request is from Vercel Cron
+// Verify the request is from Vercel Cron - REQUIRES secret in production
 function isValidCronRequest(request: NextRequest): boolean {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  // If no secret is configured, check for Vercel's cron header
-  if (!cronSecret) {
-    // Vercel sets this header for cron jobs
-    return request.headers.get("x-vercel-cron") === "true";
+  // CRON_SECRET is required in production
+  if (!cronSecret || cronSecret.trim() === "") {
+    // Only allow in development (localhost)
+    const host = request.headers.get("host") || "";
+    if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      console.warn("CRON_SECRET not set - allowing localhost access only");
+      return true;
+    }
+    console.error("CRON_SECRET not configured - blocking request");
+    return false;
   }
 
+  // In production, require proper authorization header
   return authHeader === `Bearer ${cronSecret}`;
 }
 

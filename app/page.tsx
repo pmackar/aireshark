@@ -1,227 +1,282 @@
 import Link from "next/link";
+import Image from "next/image";
 import prisma from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 async function getData() {
   try {
-    const [firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions] =
+    const [platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions] =
       await Promise.all([
-        prisma.privateEquityFirm.count(),
+        prisma.platform.count({ where: { isActive: true } }),
         prisma.brand.count(),
         prisma.acquisition.count(),
-        prisma.privateEquityFirm.findMany({
+        prisma.platform.findMany({
+          where: { isActive: true },
           take: 3,
           include: {
+            privateEquityFirm: {
+              select: { name: true },
+            },
             _count: {
               select: { brands: true },
             },
           },
-          orderBy: {
-            brands: { _count: "desc" },
-          },
+          orderBy: [
+            { valuationMillions: "desc" },
+            { brands: { _count: "desc" } },
+          ],
         }),
         prisma.acquisition.findMany({
           take: 5,
           include: {
-            privateEquityFirm: true,
+            platform: true,
             brand: true,
           },
           orderBy: { date: "desc" },
         }),
       ]);
-    return { firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions };
+    return { platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions };
   } catch {
-    // Database not configured - return empty data
     return {
-      firmCount: 0,
+      platformCount: 0,
       brandCount: 0,
       acquisitionCount: 0,
-      topFirms: [],
+      topPlatforms: [],
       recentAcquisitions: [],
     };
   }
 }
 
 export default async function Home() {
-  const { firmCount, brandCount, acquisitionCount, topFirms, recentAcquisitions } =
+  const { platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions } =
     await getData();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Private Equity in HVAC
-        </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Track acquisitions, ownership, and industry consolidation in the
-          residential heating and air conditioning market.
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link
-            href="/firms"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Explore PE Firms
-          </Link>
-          <Link
-            href="/brands"
-            className="bg-white text-gray-700 px-6 py-3 rounded-lg border hover:bg-gray-50 transition-colors"
-          >
-            View Brands
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-        <StatCard label="PE Firms Tracked" value={firmCount.toString()} />
-        <StatCard label="Brands Acquired" value={brandCount.toString()} />
-        <StatCard label="Acquisitions" value={acquisitionCount.toString()} />
-        <StatCard label="Industry" value="HVAC" />
-      </div>
-
-      {/* Top PE Firms */}
-      <section className="mb-16">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Top PE Firms</h2>
-          <Link href="/firms" className="text-blue-600 hover:underline">
-            View all →
-          </Link>
-        </div>
-        {topFirms.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topFirms.map((firm) => (
-              <Link key={firm.id} href={`/firms/${firm.slug}`}>
-                <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer h-full">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {firm.name}
-                  </h3>
-                  <p className="text-gray-500">
-                    {firm._count.brands} brands owned
-                  </p>
-                  {firm.headquarters && (
-                    <p className="text-sm text-gray-400 mt-2">
-                      {firm.headquarters}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
+      <section className="pt-16 pb-20 md:pt-20 md:pb-28 mesh-gradient">
+        <div className="max-w-[980px] mx-auto px-6 text-center">
+          <div className="mb-10 flex justify-center">
+            <div className="animate-float w-full max-w-[280px] md:max-w-[360px] lg:max-w-[420px]">
+              <Image
+                src="/logo-large.png"
+                alt="aireshark"
+                width={420}
+                height={420}
+                className="w-full h-auto object-contain drop-shadow-2xl"
+                priority
+              />
+            </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500 mb-4">No PE firms in database yet.</p>
-            <code className="text-sm bg-gray-100 px-3 py-1 rounded">
-              npm run db:seed
-            </code>
+          <h1 className="hero-headline mb-6">
+            <span className="accent">Private equity</span> intelligence
+            <br />
+            for <span className="accent">HVAC</span>.
+          </h1>
+          <p className="text-[19px] text-[#6e6e73] max-w-[620px] mx-auto leading-relaxed">
+            Track <span className="keyword">acquisitions</span>, <span className="keyword">ownership changes</span>, and <span className="keyword">market consolidation</span> across the residential heating and cooling industry.
+          </p>
+          <div className="mt-10 flex justify-center gap-4 flex-wrap">
+            <Link href="/firms" className="btn-primary">
+              Explore Platforms
+            </Link>
+            <Link href="/brands" className="btn-secondary">
+              View Brands
+            </Link>
           </div>
-        )}
+        </div>
       </section>
 
-      {/* Recent Acquisitions */}
-      <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Recent Acquisitions
-        </h2>
-        {recentAcquisitions.length > 0 ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Brand
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    PE Firm
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deal Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {recentAcquisitions.map((acq) => (
-                  <tr key={acq.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {acq.brand ? (
-                        <Link
-                          href={`/brands/${acq.brand.slug}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {acq.brand.name}
-                        </Link>
-                      ) : (
-                        "Unknown"
+      {/* Stats Section */}
+      <section className="py-20">
+        <div className="max-w-[980px] mx-auto px-6">
+          <div className="glass-premium p-10 md:p-14">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+              <StatCard value={platformCount.toString()} label="Platforms" />
+              <StatCard value={brandCount.toString()} label="Brands" />
+              <StatCard value={acquisitionCount.toString()} label="Deals" />
+              <StatCard value="HVAC" label="Industry" isText />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Platforms Section */}
+      <section className="py-20">
+        <div className="max-w-[980px] mx-auto px-6">
+          <div className="text-center mb-14">
+            <p className="badge badge-accent mb-4">Market Leaders</p>
+            <h2 className="section-headline mb-4">
+              Top <span className="keyword-glow">Platforms</span>
+            </h2>
+            <p className="text-[17px] text-[#6e6e73]">
+              The largest PE-backed consolidators in HVAC
+            </p>
+          </div>
+
+          {topPlatforms.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topPlatforms.map((platform, index) => (
+                <Link key={platform.id} href={`/firms/${platform.slug}`}>
+                  <div
+                    className="glass-card p-8 h-full opacity-0 animate-fade-in-scale"
+                    style={{ animationDelay: `${index * 0.1}s`, animationFillMode: "forwards" }}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="badge badge-accent">
+                        {platform._count.brands} brands
+                      </span>
+                      {platform.valuationMillions && (
+                        <span className="text-[13px] font-semibold keyword">
+                          ${(Number(platform.valuationMillions) / 1000).toFixed(1)}B
+                        </span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Link
-                        href={`/firms/${acq.privateEquityFirm.slug}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {acq.privateEquityFirm.name}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(acq.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {acq.amount || "Undisclosed"}
-                    </td>
+                    </div>
+                    <h3 className="text-[22px] font-semibold text-[#1d1d1f] mb-2 tracking-tight">
+                      {platform.name}
+                    </h3>
+                    {platform.privateEquityFirm && (
+                      <p className="text-[14px] text-[#86868b]">
+                        {platform.privateEquityFirm.name}
+                      </p>
+                    )}
+                    {platform.headquarters && (
+                      <p className="text-[13px] text-[#86868b] mt-2">
+                        {platform.headquarters}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="glass-premium p-14 text-center">
+              <p className="text-[#6e6e73] mb-4">No data available yet.</p>
+              <code className="text-sm bg-black/5 px-4 py-2 rounded-full text-[#1d1d1f]">
+                npm run db:seed
+              </code>
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Link href="/firms" className="btn-secondary">
+              View all platforms
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="divider-gradient max-w-[600px] mx-auto" />
+
+      {/* Recent Activity Section */}
+      <section className="py-20">
+        <div className="max-w-[980px] mx-auto px-6">
+          <div className="text-center mb-14">
+            <p className="badge badge-accent mb-4">Live Data</p>
+            <h2 className="section-headline mb-4">
+              Recent <span className="keyword-glow">Activity</span>
+            </h2>
+            <p className="text-[17px] text-[#6e6e73]">
+              Latest acquisitions and market moves
+            </p>
+          </div>
+
+          {recentAcquisitions.length > 0 ? (
+            <div className="data-table overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-black/5">
+                    <th className="px-6 py-4 text-left">Brand</th>
+                    <th className="px-6 py-4 text-left hidden sm:table-cell">Seller</th>
+                    <th className="px-6 py-4 text-left">Platform</th>
+                    <th className="px-6 py-4 text-left hidden md:table-cell">Date</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Value</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500">No acquisitions recorded yet.</p>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {recentAcquisitions.map((acq) => (
+                    <tr key={acq.id} className="border-b border-black/5 last:border-0">
+                      <td className="px-6 py-5">
+                        {acq.brand ? (
+                          <Link
+                            href={`/brands/${acq.brand.slug}`}
+                            className="link-accent"
+                          >
+                            {acq.brand.name}
+                          </Link>
+                        ) : (
+                          <span className="text-[#86868b]">Unknown</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 text-[#86868b] hidden sm:table-cell">
+                        Independent
+                      </td>
+                      <td className="px-6 py-5">
+                        {acq.platform?.slug ? (
+                          <Link
+                            href={`/firms/${acq.platform.slug}`}
+                            className="link-accent"
+                          >
+                            {acq.platform.name}
+                          </Link>
+                        ) : (
+                          <span className="text-[#1d1d1f]">{acq.platform?.name || "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 text-[#86868b] hidden md:table-cell">
+                        {new Date(acq.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-6 py-5 hidden lg:table-cell">
+                        <span className="badge badge-accent">
+                          {acq.amount || "Undisclosed"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="glass-premium p-14 text-center">
+              <p className="text-[#6e6e73]">No acquisitions recorded yet.</p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* CTA Section */}
-      <section className="mt-16 bg-blue-50 rounded-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Stay Informed
-        </h2>
-        <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-          This tracker monitors private equity activity in the HVAC industry,
-          automatically scraping news sources and PE firm portfolios for the
-          latest acquisition data.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/firms"
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Browse PE Firms
-          </Link>
-          <Link
-            href="/brands"
-            className="bg-white text-gray-700 px-6 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
-          >
-            View All Brands
-          </Link>
+      <section className="py-24 mesh-gradient">
+        <div className="max-w-[680px] mx-auto px-6 text-center">
+          <div className="glass-premium p-12 md:p-16">
+            <h2 className="section-headline mb-6">
+              Stay ahead of the <span className="keyword-glow">market</span>.
+            </h2>
+            <p className="text-[17px] text-[#6e6e73] mb-10 leading-relaxed">
+              <span className="keyword">aireshark</span> continuously monitors news sources, press releases, and platform
+              portfolios to surface the latest <span className="keyword">acquisition activity</span> in residential HVAC.
+            </p>
+            <Link href="/firms" className="btn-primary">
+              Start Exploring
+            </Link>
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ value, label, isText }: { value: string; label: string; isText?: boolean }) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
-      <p className="text-gray-500">{label}</p>
+    <div className="text-center">
+      <div className={isText ? "text-[2.5rem] font-bold tracking-tight keyword-glow" : "stat-number"}>
+        {value}
+      </div>
+      <div className="text-[14px] text-[#86868b] font-medium mt-1">{label}</div>
     </div>
   );
 }
