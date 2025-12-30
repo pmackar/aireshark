@@ -22,7 +22,7 @@ function hasValidAdminSession(request: NextRequest): boolean {
 // Authentication - API key OR valid admin session
 function isAuthorized(request: NextRequest): boolean {
   const apiKey = request.headers.get("x-api-key");
-  const expectedKey = process.env.SCRAPER_API_KEY;
+  const expectedKey = process.env.AIRESHARK_API_KEY || process.env.SCRAPER_API_KEY;
 
   if (expectedKey && expectedKey.trim() !== "" && apiKey === expectedKey) {
     return true;
