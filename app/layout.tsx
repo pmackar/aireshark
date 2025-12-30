@@ -105,6 +105,12 @@ export default function RootLayout({
                   Brands
                 </Link>
                 <Link
+                  href="/articles"
+                  className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
+                >
+                  Articles
+                </Link>
+                <Link
                   href="/admin"
                   className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
                 >
@@ -146,6 +152,12 @@ export default function RootLayout({
                   className="text-xs text-[#86868b] hover:text-[#14b8a6] transition-colors"
                 >
                   Brands
+                </Link>
+                <Link
+                  href="/articles"
+                  className="text-xs text-[#86868b] hover:text-[#14b8a6] transition-colors"
+                >
+                  Articles
                 </Link>
               </div>
             </div>
