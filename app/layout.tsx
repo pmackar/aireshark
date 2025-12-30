@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import MobileNav from "@/components/MobileNav";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aireshark.com";
@@ -74,7 +75,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen flex flex-col">
         {/* Navigation */}
         <nav className="nav-blur sticky top-0 z-50 border-b border-black/[0.04]">
-          <div className="max-w-[980px] mx-auto px-6">
+          <div className="max-w-[980px] mx-auto px-6 relative">
             <div className="flex justify-between items-center h-12">
               <Link
                 href="/"
@@ -91,32 +92,7 @@ export default function RootLayout({
                   aireshark
                 </span>
               </Link>
-              <div className="flex items-center gap-8">
-                <Link
-                  href="/firms"
-                  className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
-                >
-                  Platforms
-                </Link>
-                <Link
-                  href="/brands"
-                  className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
-                >
-                  Brands
-                </Link>
-                <Link
-                  href="/articles"
-                  className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
-                >
-                  Articles
-                </Link>
-                <Link
-                  href="/admin"
-                  className="text-xs font-normal text-[#1d1d1f] hover:opacity-70"
-                >
-                  Admin
-                </Link>
-              </div>
+              <MobileNav />
             </div>
           </div>
         </nav>
