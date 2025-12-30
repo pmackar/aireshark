@@ -33,31 +33,59 @@ interface PlatformConfig {
   extractBrands?: (html: string) => BrandInfo[];
 }
 
+// Filter out invalid brand names (testimonials, etc.)
+function isValidBrandName(name: string): boolean {
+  const invalidPatterns = [
+    /^from /i,
+    /general manager/i,
+    /customers$/i,
+    /^testimonial/i,
+    /^quote/i,
+    /^gallery$/i,
+    /^\d+$/,  // Just numbers
+    /^[a-z]$/i,  // Single letter
+    /commitment/i,
+    /priceless/i,
+    /integrity/i,
+    /unwavering/i,
+  ];
+
+  return (
+    name.length > 3 &&
+    name.length < 60 &&
+    !invalidPatterns.some(pattern => pattern.test(name))
+  );
+}
+
 // Platform-specific brand extraction configs
 const PLATFORM_EXTRACTORS: Record<string, (html: string) => BrandInfo[]> = {
   "sila-services": (html: string) => {
-    const $ = cheerio.load(html);
     const brands: BrandInfo[] = [];
+    const seenBrands = new Set<string>();
 
-    // Sila uses various card layouts
-    $(".brand-card, .location-card, [class*='brand'], [class*='company']").each(
-      (_, el) => {
-        const $el = $(el);
-        const name =
-          $el.find("h2, h3, h4, .name, .title").first().text().trim() ||
-          $el.find("img").attr("alt")?.replace(/logo/i, "").trim();
-        const website = $el.find("a[href*='http']").attr("href");
-        const location = $el.find(".location, .city, .address").text().trim();
+    // Sila's page has "From [Brand Name] Customers" pattern in h2 tags
+    const customerPattern = /From\s+(.+?)\s+Customers/gi;
+    let match;
 
-        if (name && name.length > 2 && !name.toLowerCase().includes("sila")) {
-          brands.push({
-            name,
-            website: website?.startsWith("http") ? website : undefined,
-            location: location || undefined,
-          });
-        }
+    while ((match = customerPattern.exec(html)) !== null) {
+      let name = match[1]
+        .replace(/&amp;/g, "&")
+        .replace(/&#8217;/g, "'")
+        .replace(/&#39;/g, "'")
+        .trim();
+
+      // Skip if it's Sila itself or already seen
+      const lowerName = name.toLowerCase();
+      if (lowerName.includes("sila") || seenBrands.has(lowerName)) {
+        continue;
       }
-    );
+
+      seenBrands.add(lowerName);
+
+      if (isValidBrandName(name)) {
+        brands.push({ name });
+      }
+    }
 
     return brands;
   },
@@ -75,7 +103,7 @@ const PLATFORM_EXTRACTORS: Record<string, (html: string) => BrandInfo[]> = {
         const website = $el.find("a").attr("href");
         const location = $el.find(".location, .city").text().trim();
 
-        if (name && name.length > 2 && !name.toLowerCase().includes("apex")) {
+        if (name && isValidBrandName(name) && !name.toLowerCase().includes("apex")) {
           brands.push({
             name,
             website: website?.startsWith("http") ? website : undefined,
@@ -98,7 +126,7 @@ const PLATFORM_EXTRACTORS: Record<string, (html: string) => BrandInfo[]> = {
       const website = $el.find("a[href*='http']").first().attr("href");
       const location = $el.find(".location, .market").text().trim();
 
-      if (name && name.length > 2 && !name.toLowerCase().includes("wrench")) {
+      if (name && isValidBrandName(name) && !name.toLowerCase().includes("wrench")) {
         brands.push({
           name,
           website,
