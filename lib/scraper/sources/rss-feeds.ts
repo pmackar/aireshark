@@ -19,24 +19,24 @@ interface RssFeedConfig {
 // RSS feeds for HVAC industry news
 const RSS_FEEDS: RssFeedConfig[] = [
   {
-    name: "ACHR News - M&A",
-    url: "https://www.achrnews.com/rss/topics/2669-mergers-acquisitions",
+    name: "ACHR News - Main",
+    url: "https://www.achrnews.com/rss/16",
     sourceType: "rss_news",
   },
   {
-    name: "Contracting Business",
-    url: "https://www.contractingbusiness.com/rss",
+    name: "ACHR News - Breaking",
+    url: "https://www.achrnews.com/rss/topic/2722",
     sourceType: "rss_news",
   },
   {
-    name: "PHCP Pros",
-    url: "https://www.phcppros.com/rss",
+    name: "ACHR News - Business",
+    url: "https://www.achrnews.com/rss/topic/2240",
     sourceType: "rss_news",
   },
   {
-    name: "PR Newswire - HVAC",
-    url: "https://www.prnewswire.com/rss/consumer-products-services-news.rss",
-    sourceType: "rss_press",
+    name: "Supply House Times",
+    url: "https://www.supplyht.com/rss",
+    sourceType: "rss_news",
   },
 ];
 
