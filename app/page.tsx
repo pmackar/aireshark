@@ -70,9 +70,9 @@ export default async function Home() {
             </div>
           </div>
           <h1 className="hero-headline mb-6">
-            <span className="accent">Private equity</span> intelligence
+            <span className="accent">Intelligence</span> for
             <br />
-            for <span className="accent">HVAC</span>.
+            <span className="accent">Consolidated HVAC</span>.
           </h1>
           <p className="text-[19px] text-[#6e6e73] max-w-[620px] mx-auto leading-relaxed">
             Track <span className="keyword">acquisitions</span>, <span className="keyword">ownership changes</span>, and <span className="keyword">market consolidation</span> across the residential heating and cooling industry.

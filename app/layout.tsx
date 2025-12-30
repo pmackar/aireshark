@@ -8,7 +8,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aireshark.com";
 
 export const metadata: Metadata = {
   title: {
-    default: "aireshark - Private Equity Intelligence for HVAC",
+    default: "aireshark - Intelligence for Consolidated HVAC",
     template: "%s | aireshark",
   },
   description:
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "aireshark",
-    title: "aireshark - Private Equity Intelligence for HVAC",
+    title: "aireshark - Intelligence for Consolidated HVAC",
     description:
       "Real-time intelligence on private equity activity in the HVAC industry.",
     images: [
