@@ -34,8 +34,13 @@ const RSS_FEEDS: RssFeedConfig[] = [
     sourceType: "rss_news",
   },
   {
-    name: "Supply House Times",
-    url: "https://www.supplyht.com/rss",
+    name: "PM Magazine - Main",
+    url: "https://www.pmmag.com/rss/17",
+    sourceType: "rss_news",
+  },
+  {
+    name: "PM Magazine - Plumbing News",
+    url: "https://www.pmmag.com/rss/topic/2650-plumbing-news",
     sourceType: "rss_news",
   },
 ];
