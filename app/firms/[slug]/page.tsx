@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import prisma from "@/lib/db";
+import { getUserFromSession } from "@/lib/auth";
+import GatedContent from "@/components/auth/GatedContent";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PlatformDetailPage({ params }: PageProps) {
   const { slug } = await params;
+  const user = await getUserFromSession();
+  const isAuthenticated = !!user;
 
   const platform = await prisma.platform.findUnique({
     where: { slug },
@@ -159,31 +163,33 @@ export default async function PlatformDetailPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Acquisitions by Year Chart */}
+        {/* Acquisitions by Year Chart - Gated */}
         {years.length > 0 && (
-          <div className="glass-premium p-8 mb-10">
-            <h2 className="text-[17px] font-semibold text-[#1d1d1f] mb-6">
-              Acquisitions by Year
-            </h2>
-            <div className="flex items-end space-x-3 h-48">
-              {years.map((year) => {
-                const count = acquisitionsByYear[year];
-                const height = (count / maxAcquisitions) * 100;
-                return (
-                  <div key={year} className="flex flex-col items-center flex-1">
-                    <span className="text-[15px] font-semibold keyword mb-2">
-                      {count}
-                    </span>
-                    <div
-                      className="w-full bg-gradient-to-t from-[#14b8a6] to-[#2dd4bf] rounded-t-lg"
-                      style={{ height: `${Math.max(height, 8)}%` }}
-                    />
-                    <span className="text-[12px] text-[#86868b] mt-3">{year}</span>
-                  </div>
-                );
-              })}
+          <GatedContent isAuthenticated={isAuthenticated} message="Sign up to view acquisition timeline and deal history">
+            <div className="glass-premium p-8 mb-10">
+              <h2 className="text-[17px] font-semibold text-[#1d1d1f] mb-6">
+                Acquisitions by Year
+              </h2>
+              <div className="flex items-end space-x-3 h-48">
+                {years.map((year) => {
+                  const count = acquisitionsByYear[year];
+                  const height = (count / maxAcquisitions) * 100;
+                  return (
+                    <div key={year} className="flex flex-col items-center flex-1">
+                      <span className="text-[15px] font-semibold keyword mb-2">
+                        {count}
+                      </span>
+                      <div
+                        className="w-full bg-gradient-to-t from-[#14b8a6] to-[#2dd4bf] rounded-t-lg"
+                        style={{ height: `${Math.max(height, 8)}%` }}
+                      />
+                      <span className="text-[12px] text-[#86868b] mt-3">{year}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </GatedContent>
         )}
 
         {/* Brands */}
@@ -224,47 +230,49 @@ export default async function PlatformDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Recent Articles */}
+        {/* Recent Articles - Gated */}
         {platform.articles.length > 0 && (
-          <div className="glass-premium p-8">
-            <h2 className="text-[17px] font-semibold text-[#1d1d1f] mb-6">
-              Related Articles
-            </h2>
-            <div className="space-y-4">
-              {platform.articles.map((article) => (
-                <div key={article.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link-accent text-[15px]"
-                  >
-                    {article.title}
-                  </a>
-                  <div className="flex items-center gap-2 text-[13px] text-[#86868b] mt-1">
-                    <span>{article.source}</span>
-                    {article.publishedDate && (
-                      <>
-                        <span>•</span>
-                        <span>
-                          {new Date(article.publishedDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </>
+          <GatedContent isAuthenticated={isAuthenticated} message="Sign up to access related news and articles">
+            <div className="glass-premium p-8">
+              <h2 className="text-[17px] font-semibold text-[#1d1d1f] mb-6">
+                Related Articles
+              </h2>
+              <div className="space-y-4">
+                {platform.articles.map((article) => (
+                  <div key={article.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link-accent text-[15px]"
+                    >
+                      {article.title}
+                    </a>
+                    <div className="flex items-center gap-2 text-[13px] text-[#86868b] mt-1">
+                      <span>{article.source}</span>
+                      {article.publishedDate && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            {new Date(article.publishedDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {article.summary && (
+                      <p className="text-[14px] text-[#6e6e73] mt-2 line-clamp-2">
+                        {article.summary}
+                      </p>
                     )}
                   </div>
-                  {article.summary && (
-                    <p className="text-[14px] text-[#6e6e73] mt-2 line-clamp-2">
-                      {article.summary}
-                    </p>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </GatedContent>
         )}
       </div>
     </div>

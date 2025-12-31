@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import prisma from "@/lib/db";
+import { getUserFromSession } from "@/lib/auth";
+import GatedContent from "@/components/auth/GatedContent";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BrandDetailPage({ params }: PageProps) {
   const { slug } = await params;
+  const user = await getUserFromSession();
+  const isAuthenticated = !!user;
 
   const brand = await prisma.brand.findUnique({
     where: { slug },
@@ -96,95 +100,99 @@ export default async function BrandDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Acquisition Details */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Acquisition Details
-            </h2>
-            <dl className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm text-gray-500">Acquired By</dt>
-                <dd className="text-gray-900 font-medium">
-                  {brand.privateEquityFirm ? (
-                    <Link
-                      href={`/firms/${brand.privateEquityFirm.slug}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {brand.privateEquityFirm.name}
-                    </Link>
-                  ) : (
-                    "Unknown"
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Acquisition Date</dt>
-                <dd className="text-gray-900 font-medium">
-                  {brand.acquisitionDate
-                    ? new Date(brand.acquisitionDate).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "long",
-                          year: "numeric",
-                        }
-                      )
-                    : "Unknown"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Deal Value</dt>
-                <dd className="text-gray-900 font-medium">
-                  {brand.acquisitionPrice || "Undisclosed"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Service Area</dt>
-                <dd className="text-gray-900 font-medium">
-                  {brand.serviceArea || "Local/Regional"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          {/* Related Articles */}
-          {brand.articles.length > 0 && (
+          {/* Acquisition Details - Gated */}
+          <GatedContent isAuthenticated={isAuthenticated} message="Sign up to view acquisition details and deal values">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Related Articles
+                Acquisition Details
               </h2>
-              <div className="space-y-4">
-                {brand.articles.map((article) => (
-                  <div key={article.id} className="border-b pb-4 last:border-0">
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      {article.title}
-                    </a>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
-                      <span>{article.source}</span>
-                      {article.publishedDate && (
-                        <>
-                          <span>•</span>
-                          <span>
-                            {new Date(article.publishedDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <dl className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm text-gray-500">Acquired By</dt>
+                  <dd className="text-gray-900 font-medium">
+                    {brand.privateEquityFirm ? (
+                      <Link
+                        href={`/firms/${brand.privateEquityFirm.slug}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {brand.privateEquityFirm.name}
+                      </Link>
+                    ) : (
+                      "Unknown"
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-gray-500">Acquisition Date</dt>
+                  <dd className="text-gray-900 font-medium">
+                    {brand.acquisitionDate
+                      ? new Date(brand.acquisitionDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )
+                      : "Unknown"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-gray-500">Deal Value</dt>
+                  <dd className="text-gray-900 font-medium">
+                    {brand.acquisitionPrice || "Undisclosed"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-gray-500">Service Area</dt>
+                  <dd className="text-gray-900 font-medium">
+                    {brand.serviceArea || "Local/Regional"}
+                  </dd>
+                </div>
+              </dl>
             </div>
+          </GatedContent>
+
+          {/* Related Articles - Gated */}
+          {brand.articles.length > 0 && (
+            <GatedContent isAuthenticated={isAuthenticated} message="Sign up to access related news and articles">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Related Articles
+                </h2>
+                <div className="space-y-4">
+                  {brand.articles.map((article) => (
+                    <div key={article.id} className="border-b pb-4 last:border-0">
+                      <a
+                        href={article.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {article.title}
+                      </a>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
+                        <span>{article.source}</span>
+                        {article.publishedDate && (
+                          <>
+                            <span>•</span>
+                            <span>
+                              {new Date(article.publishedDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </GatedContent>
           )}
         </div>
 

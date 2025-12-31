@@ -205,3 +205,32 @@ model ScrapeLog {
   @@index([sourceId])
   @@index([startedAt(sort: Desc)])
 }
+
+// User authentication
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  name             String?
+  subscriptionTier String    @default("free") // 'free', 'basic', 'pro'
+  stripeCustomerId String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  sessions         Session[]
+
+  @@index([email])
+  @@index([subscriptionTier])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}

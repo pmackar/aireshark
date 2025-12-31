@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SESSION_COOKIE_NAME = "admin_session";
+const ADMIN_SESSION_COOKIE = "admin_session";
+const USER_SESSION_COOKIE = "user_session";
+
+// Routes requiring user login (full page redirect)
+const USER_PROTECTED_ROUTES = ["/articles"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect /admin routes (except /admin/login)
+  // Protect /admin routes (except /admin/login)
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const passwordHash = process.env.ADMIN_PASSWORD_HASH;
 
@@ -15,7 +19,7 @@ export function middleware(request: NextRequest) {
     }
 
     // Check for session cookie
-    const sessionToken = request.cookies.get(SESSION_COOKIE_NAME);
+    const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE);
 
     if (!sessionToken?.value) {
       // Redirect to login
@@ -25,9 +29,21 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Protect user routes (articles, etc.)
+  if (USER_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+    const userSession = request.cookies.get(USER_SESSION_COOKIE);
+
+    if (!userSession?.value) {
+      // Redirect to user login
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/articles/:path*"],
 };

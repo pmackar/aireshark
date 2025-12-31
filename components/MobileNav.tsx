@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "/firms", label: "Platforms" },
@@ -10,8 +11,40 @@ const navLinks = [
   { href: "/admin", label: "Admin" },
 ];
 
+type User = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/user/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch {
+        // Not logged in
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/user/logout", { method: "POST" });
+    setUser(null);
+    router.refresh();
+  }
 
   return (
     <>
@@ -26,6 +59,25 @@ export default function MobileNav() {
             {link.label}
           </Link>
         ))}
+        {!loading && (
+          <>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="text-xs font-normal text-[#86868b] hover:text-[#14b8a6] transition-colors"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-xs font-medium text-[#14b8a6] hover:opacity-70"
+              >
+                Sign In
+              </Link>
+            )}
+          </>
+        )}
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -60,6 +112,29 @@ export default function MobileNav() {
                   {link.label}
                 </Link>
               ))}
+              {!loading && (
+                <div className="border-t border-black/5 pt-4 mt-2">
+                  {user ? (
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsOpen(false);
+                      }}
+                      className="text-sm font-normal text-[#86868b] hover:text-[#14b8a6] transition-colors py-2 w-full text-left"
+                    >
+                      Sign Out
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="text-sm font-medium text-[#14b8a6] py-2 block"
+                    >
+                      Sign In
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
