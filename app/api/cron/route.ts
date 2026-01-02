@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   runAllScrapers,
   runNewsScrapeOnly,
+  runGoogleScrapeOnly,
   runPortfolioScrapeOnly,
   runRssScrapeOnly,
   runGmailScrapeOnly,
@@ -44,19 +45,11 @@ export async function GET(request: NextRequest) {
 
     switch (type) {
       case "daily": {
-        // Daily: Run RSS feeds, Gmail alerts, news scrapers
-        console.log("Running daily scrape (RSS, Gmail, News)...");
+        // Daily: Run Gmail alerts, Google News, RSS feeds
+        console.log("Running daily scrape (Gmail, Google, RSS)...");
         const dailyResults: Record<string, unknown> = {};
 
-        // RSS feeds
-        try {
-          dailyResults.rss = await runRssScrapeOnly();
-        } catch (e) {
-          console.error("RSS scrape failed:", e);
-          dailyResults.rss = { error: String(e) };
-        }
-
-        // Gmail alerts (if configured)
+        // Gmail alerts (if configured) - best source for targeted news
         if (isGmailConfigured()) {
           try {
             dailyResults.gmail = await runGmailScrapeOnly();
@@ -68,12 +61,20 @@ export async function GET(request: NextRequest) {
           dailyResults.gmail = { skipped: "Gmail not configured" };
         }
 
-        // News scraper
+        // Google News search
         try {
-          dailyResults.news = await runNewsScrapeOnly();
+          dailyResults.google = await runGoogleScrapeOnly();
         } catch (e) {
-          console.error("News scrape failed:", e);
-          dailyResults.news = { error: String(e) };
+          console.error("Google scrape failed:", e);
+          dailyResults.google = { error: String(e) };
+        }
+
+        // RSS feeds
+        try {
+          dailyResults.rss = await runRssScrapeOnly();
+        } catch (e) {
+          console.error("RSS scrape failed:", e);
+          dailyResults.rss = { error: String(e) };
         }
 
         result = dailyResults;
