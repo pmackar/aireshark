@@ -18,7 +18,12 @@ interface RssFeedConfig {
 
 // RSS feeds for HVAC industry news and M&A press releases
 const RSS_FEEDS: RssFeedConfig[] = [
-  // HVAC Trade Publications
+  // HVAC/Plumbing Industry News
+  {
+    name: "Homepros",
+    url: "https://homepros.news/feed/",
+    sourceType: "rss_news",
+  },
   {
     name: "ACHR News - Business",
     url: "https://www.achrnews.com/rss/topic/2240",
@@ -34,7 +39,6 @@ const RSS_FEEDS: RssFeedConfig[] = [
     url: "https://www.contractingbusiness.com/rss",
     sourceType: "rss_news",
   },
-  // Plumbing Trade
   {
     name: "PM Magazine - Plumbing News",
     url: "https://www.pmmag.com/rss/topic/2650-plumbing-news",
