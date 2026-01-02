@@ -1,4 +1,4 @@
-import { scrapePageContent } from "../browser";
+import { scrapePageContentLite } from "../browser";
 import { extractFromArticle, classifyArticleRelevance } from "../extractor";
 import prisma from "@/lib/db";
 
@@ -22,16 +22,39 @@ interface GoogleSearchResponse {
 }
 
 const SEARCH_QUERIES = [
+  // Core PE + trade queries
   '"private equity" HVAC acquisition',
   '"private equity" plumbing acquisition',
+  '"private equity" electrical contractor acquisition',
+  '"private equity" home services',
+
+  // Major platforms
   "Apex Service Partners acquisition",
-  "Wrench Group HVAC",
+  "Wrench Group acquisition",
+  "Sila Services acquisition",
   "Redwood Services acquisition",
-  "HVAC company acquired",
-  "home services consolidation private equity",
-  "HVAC M&A deal",
+  "Service Experts acquisition",
+  "Horizon Services acquisition",
+  "Lee Company HVAC acquisition",
+
+  // Major PE firms in the space
   '"Alpine Investors" HVAC',
+  '"Leonard Green" home services',
+  '"Roark Capital" HVAC',
+  '"Partners Group" residential services',
+
+  // Deal types
+  "HVAC company acquired",
+  "HVAC M&A deal",
+  "HVAC company merger",
+  "plumbing company merger acquisition",
+  "home services consolidation",
   "residential services platform acquisition",
+
+  // Industry news
+  "HVAC contractor sold private equity",
+  "plumbing contractor acquired",
+  "home services roll-up",
 ];
 
 export async function searchGoogleNews(
@@ -131,8 +154,8 @@ async function processGoogleResult(result: GoogleSearchResult): Promise<boolean>
       return false;
     }
 
-    // Scrape full content
-    const pageContent = await scrapePageContent(result.link);
+    // Scrape full content (using lightweight fetch-based scraper for serverless)
+    const pageContent = await scrapePageContentLite(result.link);
     if (!pageContent) {
       return false;
     }
@@ -253,7 +276,7 @@ export async function scrapeGoogleNewsDirect(query: string): Promise<GoogleSearc
 
   try {
     const searchUrl = `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-    const pageContent = await scrapePageContent(searchUrl);
+    const pageContent = await scrapePageContentLite(searchUrl);
 
     if (!pageContent) {
       return results;
