@@ -21,41 +21,29 @@ interface GoogleSearchResponse {
   };
 }
 
-const SEARCH_QUERIES = [
+// Limited to ~8 queries to stay within Vercel 60s timeout
+// Rotates through different query sets on each run
+const ALL_QUERIES = [
   // Core PE + trade queries
   '"private equity" HVAC acquisition',
   '"private equity" plumbing acquisition',
-  '"private equity" electrical contractor acquisition',
   '"private equity" home services',
-
   // Major platforms
   "Apex Service Partners acquisition",
   "Wrench Group acquisition",
   "Sila Services acquisition",
   "Redwood Services acquisition",
-  "Service Experts acquisition",
-  "Horizon Services acquisition",
-  "Lee Company HVAC acquisition",
-
-  // Major PE firms in the space
-  '"Alpine Investors" HVAC',
-  '"Leonard Green" home services',
-  '"Roark Capital" HVAC',
-  '"Partners Group" residential services',
-
   // Deal types
   "HVAC company acquired",
-  "HVAC M&A deal",
   "HVAC company merger",
-  "plumbing company merger acquisition",
   "home services consolidation",
-  "residential services platform acquisition",
-
-  // Industry news
-  "HVAC contractor sold private equity",
-  "plumbing contractor acquired",
-  "home services roll-up",
+  // PE firms
+  '"Alpine Investors" HVAC',
+  '"Leonard Green" home services',
 ];
+
+// Use 6 queries per run to stay within timeout
+const SEARCH_QUERIES = ALL_QUERIES.slice(0, 6);
 
 export async function searchGoogleNews(
   query: string
@@ -117,8 +105,8 @@ export async function runGoogleNewsScraper(): Promise<{
       }
     }
 
-    // Rate limiting - Google API has quota limits
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Rate limiting - reduced for serverless timeout
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   console.log(`Found ${allResults.length} unique articles from Google`);
@@ -128,8 +116,8 @@ export async function runGoogleNewsScraper(): Promise<{
     const success = await processGoogleResult(result);
     if (success) stored++;
 
-    // Rate limiting for scraping
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    // Rate limiting for scraping - reduced for serverless timeout
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   console.log(`Stored ${stored} new articles from Google`);
