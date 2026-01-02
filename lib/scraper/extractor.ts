@@ -17,6 +17,7 @@ export interface ExtractedAcquisition {
 export interface ExtractedArticle {
   title: string;
   summary: string;
+  publishedDate: string | null;
   peFirmMentions: string[];
   brandMentions: string[];
   isRelevant: boolean;
@@ -35,6 +36,7 @@ Return your response as JSON in this exact format:
 {
   "title": "Brief descriptive title for the article",
   "summary": "2-3 sentence summary of the article content",
+  "publishedDate": "YYYY-MM-DD format if found in article, or null if not mentioned",
   "peFirmMentions": ["List of PE firm names mentioned"],
   "brandMentions": ["List of HVAC/plumbing/electrical company names mentioned"],
   "isRelevant": true/false (is this about PE activity in HVAC/home services?),

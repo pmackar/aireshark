@@ -154,6 +154,14 @@ export async function processRssItem(
       }
     }
 
+    // Determine publish date: prefer extracted, then RSS pubDate, then now
+    let publishedDate = new Date();
+    if (extracted.publishedDate) {
+      publishedDate = new Date(extracted.publishedDate);
+    } else if (item.pubDate) {
+      publishedDate = new Date(item.pubDate);
+    }
+
     // Store article
     await prisma.article.create({
       data: {
@@ -161,7 +169,7 @@ export async function processRssItem(
         url: item.link,
         source: feedName,
         summary: extracted.summary,
-        publishedDate: item.pubDate ? new Date(item.pubDate) : new Date(),
+        publishedDate,
         platformId,
         privateEquityFirmId: peFirmId,
       },

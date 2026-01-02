@@ -8,6 +8,7 @@ interface NavLink {
   href: string;
   label: string;
   authRequired?: boolean;
+  adminOnly?: boolean;
 }
 
 const navLinks: NavLink[] = [
@@ -15,13 +16,14 @@ const navLinks: NavLink[] = [
   { href: "/brands", label: "Brands" },
   { href: "/articles", label: "Articles" },
   { href: "/watchlist", label: "Watchlist", authRequired: true },
-  { href: "/admin", label: "Admin" },
+  { href: "/admin", label: "Admin", adminOnly: true },
 ];
 
 type User = {
   id: string;
   email: string;
   name: string | null;
+  role: string;
 };
 
 export default function MobileNav() {
@@ -53,8 +55,12 @@ export default function MobileNav() {
     router.refresh();
   }
 
-  // Filter links based on auth status
-  const visibleLinks = navLinks.filter((link) => !link.authRequired || user);
+  // Filter links based on auth status and role
+  const visibleLinks = navLinks.filter((link) => {
+    if (link.adminOnly && user?.role !== "admin") return false;
+    if (link.authRequired && !user) return false;
+    return true;
+  });
 
   return (
     <>
