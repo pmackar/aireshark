@@ -181,6 +181,13 @@ export async function runGmailScrapeOnly(): Promise<{
   emailsProcessed: number;
   articlesFound: number;
   articlesStored: number;
+  skipReasons: {
+    duplicate: number;
+    scrape_failed: number;
+    not_relevant: number;
+    extraction_failed: number;
+    error: number;
+  };
   duration: number;
 }> {
   const startTime = Date.now();
