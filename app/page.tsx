@@ -83,12 +83,14 @@ export default async function Home() {
       <section className="py-20">
         <div className="max-w-[980px] mx-auto px-6">
           <div className="glass-premium p-10 md:p-14">
-            <p className="text-[13px] text-[#86868b] font-medium text-center mb-8 tracking-wide uppercase">Tracking</p>
+            <h2 className="text-[28px] md:text-[32px] font-bold text-[#1d1d1f] text-center mb-10 tracking-tight">
+              Tracking
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
               <StatCard value={platformCount.toString()} label="Platforms" />
               <StatCard value={brandCount.toString()} label="Brands" />
               <StatCard value={acquisitionCount.toString()} label="Deals" />
-              <StatCard value="HVAC" label="Industry" isText />
+              <StatCard value="HVAC" label="Industry" />
             </div>
           </div>
         </div>
@@ -244,13 +246,14 @@ export default async function Home() {
   );
 }
 
-function StatCard({ value, label, isText }: { value: string; label: string; isText?: boolean }) {
+function StatCard({ value, label }: { value: string; label: string }) {
+  const isText = isNaN(Number(value));
   return (
     <div className="text-center">
-      <div className={isText ? "text-[2.5rem] font-bold tracking-tight keyword-glow" : "stat-number"}>
+      <div className={`text-[2.5rem] md:text-[3rem] font-bold tracking-tight ${isText ? "keyword" : "text-[#1d1d1f]"}`}>
         {value}
       </div>
-      <div className="text-[14px] text-[#86868b] font-medium mt-1">{label}</div>
+      <div className="text-[14px] text-[#86868b] font-medium mt-2">{label}</div>
     </div>
   );
 }
