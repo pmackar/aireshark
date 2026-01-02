@@ -8,29 +8,11 @@ import {
   runPlatformMonitorOnly,
   runGmailScrapeOnly,
 } from "@/lib/scraper";
+import { isUserAdmin } from "@/lib/auth";
 
-const SESSION_COOKIE_NAME = "admin_session";
-
-// Check if user has valid admin session
-function hasValidAdminSession(request: NextRequest): boolean {
-  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
-
-  // In production, require password to be configured
-  if (!passwordHash || passwordHash.trim() === "") {
-    const host = request.headers.get("host") || "";
-    // Only allow session-based auth in development
-    if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
-      return false;
-    }
-  }
-
-  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME);
-  return !!sessionToken?.value;
-}
-
-// Authentication - API key OR valid admin session
-function isAuthorized(request: NextRequest): boolean {
-  // Check API key first (support both key names)
+// Authentication - API key OR admin user session
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  // Check API key first (support both key names) - used by cron jobs
   const apiKey = request.headers.get("x-api-key");
   const expectedKey = process.env.AIRESHARK_API_KEY || process.env.SCRAPER_API_KEY;
 
@@ -38,20 +20,19 @@ function isAuthorized(request: NextRequest): boolean {
     return true;
   }
 
-  // Check for valid admin session (from /admin dashboard)
-  if (hasValidAdminSession(request)) {
+  // Check for valid admin user session (from /admin dashboard)
+  if (await isUserAdmin()) {
     return true;
   }
 
-  // In development without keys, allow localhost access
+  // In development without API key, allow localhost access
   const host = request.headers.get("host") || "";
   if (host.includes("localhost") || host.includes("127.0.0.1")) {
     const hasApiKey = expectedKey && expectedKey.trim() !== "";
-    const hasPasswordHash = process.env.ADMIN_PASSWORD_HASH && process.env.ADMIN_PASSWORD_HASH.trim() !== "";
 
-    // Only allow if no auth is configured at all (pure development)
-    if (!hasApiKey && !hasPasswordHash) {
-      console.warn("No auth configured - allowing localhost access");
+    // Only allow if no API key is configured (pure development)
+    if (!hasApiKey) {
+      console.warn("No API key configured - allowing localhost access");
       return true;
     }
   }
@@ -61,7 +42,7 @@ function isAuthorized(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   // Check authorization
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -129,7 +110,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   // Check authorization
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

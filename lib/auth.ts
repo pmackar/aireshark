@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
 import type { User } from "@prisma/client";
 
-const SESSION_COOKIE_NAME = "admin_session";
 const USER_SESSION_COOKIE_NAME = "user_session";
 const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days in seconds
 
@@ -14,7 +13,7 @@ function generateSessionToken(): string {
   return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-// Hash a password (for generating ADMIN_PASSWORD_HASH)
+// Hash a password
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
@@ -26,65 +25,6 @@ export async function verifyPassword(
 ): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
-
-// Check if the provided password is correct
-export async function validateAdminPassword(password: string): Promise<boolean> {
-  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
-
-  // If no password is configured, allow access in development
-  if (!passwordHash) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("ADMIN_PASSWORD_HASH not set - allowing access in development");
-      return true;
-    }
-    return false;
-  }
-
-  return verifyPassword(password, passwordHash);
-}
-
-// Create a session and set cookie
-export async function createSession(): Promise<string> {
-  const token = generateSessionToken();
-  const cookieStore = await cookies();
-
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: SESSION_DURATION,
-    path: "/",
-  });
-
-  return token;
-}
-
-// Check if user has valid session
-export async function isAuthenticated(): Promise<boolean> {
-  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
-
-  // If no password is configured, allow access in development
-  if (!passwordHash && process.env.NODE_ENV === "development") {
-    return true;
-  }
-
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME);
-
-  // Simple check: if cookie exists, user is authenticated
-  // In production, you'd want to verify against a session store
-  return !!sessionToken?.value;
-}
-
-// Clear session
-export async function clearSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
-}
-
-// ============================================
-// User Authentication (for paywall)
-// ============================================
 
 export type SafeUser = Omit<User, "passwordHash">;
 
@@ -144,6 +84,21 @@ export async function getUserFromSession(): Promise<SafeUser | null> {
 export async function isUserAuthenticated(): Promise<boolean> {
   const user = await getUserFromSession();
   return !!user;
+}
+
+// Check if current user is an admin
+export async function isUserAdmin(): Promise<boolean> {
+  const user = await getUserFromSession();
+  return user?.role === "admin";
+}
+
+// Get current user if they are an admin, otherwise null
+export async function getAdminUser(): Promise<SafeUser | null> {
+  const user = await getUserFromSession();
+  if (user?.role === "admin") {
+    return user;
+  }
+  return null;
 }
 
 // Clear user session

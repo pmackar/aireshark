@@ -1,26 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { isUserAdmin } from "@/lib/auth";
 
-const SESSION_COOKIE_NAME = "admin_session";
-
-// Check if user has valid admin session
-function hasValidAdminSession(request: NextRequest): boolean {
-  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
-
-  // In production, require password to be configured
-  if (!passwordHash || passwordHash.trim() === "") {
-    const host = request.headers.get("host") || "";
-    if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
-      return false;
-    }
-  }
-
-  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME);
-  return !!sessionToken?.value;
-}
-
-// Authentication - API key OR valid admin session
-function isAuthorized(request: NextRequest): boolean {
+// Authentication - API key OR admin user session
+async function isAuthorized(request: NextRequest): Promise<boolean> {
   const apiKey = request.headers.get("x-api-key");
   const expectedKey = process.env.AIRESHARK_API_KEY || process.env.SCRAPER_API_KEY;
 
@@ -28,16 +11,15 @@ function isAuthorized(request: NextRequest): boolean {
     return true;
   }
 
-  if (hasValidAdminSession(request)) {
+  if (await isUserAdmin()) {
     return true;
   }
 
-  // Only allow localhost if no auth configured
+  // Only allow localhost if no API key configured
   const host = request.headers.get("host") || "";
   if (host.includes("localhost") || host.includes("127.0.0.1")) {
     const hasApiKey = expectedKey && expectedKey.trim() !== "";
-    const hasPasswordHash = process.env.ADMIN_PASSWORD_HASH && process.env.ADMIN_PASSWORD_HASH.trim() !== "";
-    if (!hasApiKey && !hasPasswordHash) {
+    if (!hasApiKey) {
       return true;
     }
   }
@@ -47,7 +29,7 @@ function isAuthorized(request: NextRequest): boolean {
 
 export async function GET(request: NextRequest) {
   // Check authorization
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

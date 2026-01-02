@@ -212,6 +212,7 @@ model User {
   email            String    @unique
   passwordHash     String
   name             String?
+  role             String    @default("user") // 'user', 'admin'
   subscriptionTier String    @default("free") // 'free', 'basic', 'pro'
   stripeCustomerId String?   @unique
   createdAt        DateTime  @default(now())
@@ -220,6 +221,7 @@ model User {
 
   @@index([email])
   @@index([subscriptionTier])
+  @@index([role])
 }
 
 model Session {
