@@ -42,8 +42,8 @@ const ALL_QUERIES = [
   '"Leonard Green" home services',
 ];
 
-// Use 6 queries per run to stay within timeout
-const SEARCH_QUERIES = ALL_QUERIES.slice(0, 6);
+// Use 3 queries per run to stay within Vercel 60s timeout
+const SEARCH_QUERIES = ALL_QUERIES.slice(0, 3);
 
 export async function searchGoogleNews(
   query: string
@@ -111,13 +111,16 @@ export async function runGoogleNewsScraper(): Promise<{
 
   console.log(`Found ${allResults.length} unique articles from Google`);
 
+  // Limit to 10 results to stay within timeout
+  const resultsToProcess = allResults.slice(0, 10);
+
   let stored = 0;
-  for (const result of allResults) {
+  for (const result of resultsToProcess) {
     const success = await processGoogleResult(result);
     if (success) stored++;
 
-    // Rate limiting for scraping - reduced for serverless timeout
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Minimal delay between scrapes
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   console.log(`Stored ${stored} new articles from Google`);
