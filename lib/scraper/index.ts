@@ -1,5 +1,4 @@
 import { closeBrowser } from "./browser";
-import { runNewsScraper } from "./sources/news";
 import { runGoogleNewsScraper } from "./sources/google-news";
 import { runPortfolioScraper } from "./sources/portfolio";
 import { runRssFeedScraper } from "./sources/rss-feeds";
@@ -7,10 +6,6 @@ import { runPlatformMonitor } from "./sources/platform-monitor";
 import { runGmailAlertsScraper, isGmailConfigured } from "./sources/gmail-alerts";
 
 export interface ScraperResult {
-  news: {
-    articlesFound: number;
-    articlesStored: number;
-  };
   google: {
     articlesFound: number;
     articlesStored: number;
@@ -32,22 +27,12 @@ export async function runAllScrapers(): Promise<ScraperResult> {
   const startTime = Date.now();
   const errors: string[] = [];
 
-  let newsResult = { articlesFound: 0, articlesStored: 0 };
   let googleResult = { articlesFound: 0, articlesStored: 0 };
   let rssResult = { articlesFound: 0, articlesStored: 0 };
   let portfolioResult = { firmsScraped: 0, totalBrandsFound: 0, totalBrandsAdded: 0 };
 
   try {
     console.log("=== Starting full scrape ===");
-
-    // Run news scraper
-    try {
-      newsResult = await runNewsScraper();
-    } catch (error) {
-      const msg = `News scraper error: ${error}`;
-      console.error(msg);
-      errors.push(msg);
-    }
 
     // Run Google News scraper
     try {
@@ -88,27 +73,12 @@ export async function runAllScrapers(): Promise<ScraperResult> {
   }
 
   return {
-    news: newsResult,
     google: googleResult,
     rss: rssResult,
     portfolio: portfolioResult,
     duration: Date.now() - startTime,
     errors,
   };
-}
-
-export async function runNewsScrapeOnly(): Promise<{
-  articlesFound: number;
-  articlesStored: number;
-  duration: number;
-}> {
-  const startTime = Date.now();
-  try {
-    const result = await runNewsScraper();
-    return { ...result, duration: Date.now() - startTime };
-  } finally {
-    await closeBrowser();
-  }
 }
 
 export async function runGoogleScrapeOnly(): Promise<{

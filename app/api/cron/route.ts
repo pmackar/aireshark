@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   runAllScrapers,
-  runNewsScrapeOnly,
   runGoogleScrapeOnly,
   runPortfolioScrapeOnly,
   runRssScrapeOnly,

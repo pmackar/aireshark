@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   runAllScrapers,
-  runNewsScrapeOnly,
   runGoogleScrapeOnly,
   runPortfolioScrapeOnly,
   runRssScrapeOnly,
@@ -53,11 +52,6 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (type) {
-      case "news":
-        console.log("Running news scraper only...");
-        result = await runNewsScrapeOnly();
-        break;
-
       case "google":
         console.log("Running Google News scraper only...");
         result = await runGoogleScrapeOnly();
@@ -117,10 +111,10 @@ export async function GET(request: NextRequest) {
   // GET request returns scraper status/info
   return NextResponse.json({
     status: "ready",
-    availableTypes: ["all", "news", "google", "portfolio", "rss", "platforms", "gmail"],
+    availableTypes: ["all", "google", "portfolio", "rss", "platforms", "gmail"],
     usage: {
       method: "POST",
-      body: { type: "all | news | google | portfolio | rss | platforms | gmail" },
+      body: { type: "all | google | portfolio | rss | platforms | gmail" },
       headers: { "x-api-key": "your-api-key (if SCRAPER_API_KEY is set)" },
     },
     endpoints: {
