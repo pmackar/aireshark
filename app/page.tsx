@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 async function getData() {
   try {
-    const [platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions] =
+    const [platformCount, brandCount, acquisitionCount, topPlatforms] =
       await Promise.all([
         prisma.platform.count({ where: { isActive: true } }),
         prisma.brand.count(),
@@ -23,33 +23,24 @@ async function getData() {
             },
           },
           orderBy: [
-            { valuationMillions: "desc" },
+            { valuationMillions: { sort: "desc", nulls: "last" } },
             { brands: { _count: "desc" } },
           ],
         }),
-        prisma.acquisition.findMany({
-          take: 5,
-          include: {
-            platform: true,
-            brand: true,
-          },
-          orderBy: { date: "desc" },
-        }),
       ]);
-    return { platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions };
+    return { platformCount, brandCount, acquisitionCount, topPlatforms };
   } catch {
     return {
       platformCount: 0,
       brandCount: 0,
       acquisitionCount: 0,
       topPlatforms: [],
-      recentAcquisitions: [],
     };
   }
 }
 
 export default async function Home() {
-  const { platformCount, brandCount, acquisitionCount, topPlatforms, recentAcquisitions } =
+  const { platformCount, brandCount, acquisitionCount, topPlatforms } =
     await getData();
 
   return (
@@ -93,9 +84,9 @@ export default async function Home() {
         <div className="max-w-[980px] mx-auto px-6">
           <div className="glass-premium p-10 md:p-14">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-              <StatCard value={platformCount.toString()} label="Platforms" />
-              <StatCard value={brandCount.toString()} label="Brands" />
-              <StatCard value={acquisitionCount.toString()} label="Deals" />
+              <StatCard value={platformCount.toString()} label="Tracking Platforms" />
+              <StatCard value={brandCount.toString()} label="Tracking Brands" />
+              <StatCard value={acquisitionCount.toString()} label="Tracking Deals" />
               <StatCard value="HVAC" label="Industry" isText />
             </div>
           </div>
@@ -183,8 +174,9 @@ export default async function Home() {
             </p>
           </div>
 
-          {recentAcquisitions.length > 0 ? (
-            <div className="data-table overflow-x-auto">
+          <div className="relative">
+            {/* Blurred placeholder table */}
+            <div className="data-table overflow-x-auto blur-sm select-none pointer-events-none">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-black/5">
@@ -196,56 +188,37 @@ export default async function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentAcquisitions.map((acq) => (
-                    <tr key={acq.id} className="border-b border-black/5 last:border-0">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b border-black/5 last:border-0">
                       <td className="px-6 py-5">
-                        {acq.brand ? (
-                          <Link
-                            href={`/brands/${acq.brand.slug}`}
-                            className="link-accent"
-                          >
-                            {acq.brand.name}
-                          </Link>
-                        ) : (
-                          <span className="text-[#86868b]">Unknown</span>
-                        )}
+                        <span className="text-[#14b8a6]">Sample Brand {i}</span>
                       </td>
                       <td className="px-6 py-5 text-[#86868b] hidden sm:table-cell">
                         Independent
                       </td>
                       <td className="px-6 py-5">
-                        {acq.platform?.slug ? (
-                          <Link
-                            href={`/firms/${acq.platform.slug}`}
-                            className="link-accent"
-                          >
-                            {acq.platform.name}
-                          </Link>
-                        ) : (
-                          <span className="text-[#1d1d1f]">{acq.platform?.name || "—"}</span>
-                        )}
+                        <span className="text-[#14b8a6]">Platform Name</span>
                       </td>
                       <td className="px-6 py-5 text-[#86868b] hidden md:table-cell">
-                        {new Date(acq.date).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        Jan 2025
                       </td>
                       <td className="px-6 py-5 hidden lg:table-cell">
-                        <span className="badge badge-accent">
-                          {acq.amount || "Undisclosed"}
-                        </span>
+                        <span className="badge badge-accent">Undisclosed</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="glass-premium p-14 text-center">
-              <p className="text-[#6e6e73]">No acquisitions recorded yet.</p>
+
+            {/* Overlay with "Insights coming soon" */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="glass-premium px-8 py-6 text-center">
+                <p className="text-[17px] font-semibold text-[#1d1d1f] mb-1">Insights coming soon</p>
+                <p className="text-[14px] text-[#86868b]">Real-time acquisition tracking is on the way</p>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </section>
 
