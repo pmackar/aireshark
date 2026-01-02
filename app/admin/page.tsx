@@ -134,7 +134,8 @@ export default function AdminPage() {
         </h2>
         <p className="text-gray-600 text-sm mb-4">
           Note: Scraping requires OpenAI API key to be configured. Google News
-          scraping also requires Google API credentials.
+          requires Google API credentials. Gmail Alerts requires Gmail OAuth
+          credentials.
         </p>
         <div className="flex flex-wrap gap-4">
           <button
@@ -150,6 +151,13 @@ export default function AdminPage() {
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {scraping ? "Scraping..." : "Scrape Google News"}
+          </button>
+          <button
+            onClick={() => triggerScrape("gmail")}
+            disabled={scraping}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {scraping ? "Scraping..." : "Scrape Gmail Alerts"}
           </button>
           <button
             onClick={() => triggerScrape("portfolio")}
@@ -250,12 +258,12 @@ export default function AdminPage() {
         </p>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>
-            <strong>Daily (6 AM UTC):</strong> News sources scraped for new
-            articles
+            <strong>Daily (6 AM UTC):</strong> RSS feeds, Gmail alerts, and news
+            sources scraped for new articles
           </li>
           <li>
-            <strong>Weekly (Sunday 7 AM UTC):</strong> PE firm portfolio pages
-            refreshed
+            <strong>Weekly (Monday 8 AM UTC):</strong> Platform monitoring and
+            PE firm portfolio pages refreshed
           </li>
         </ul>
       </div>

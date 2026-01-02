@@ -63,24 +63,41 @@ function extractUrlsFromAlertEmail(htmlBody: string): string[] {
         // Keep original if decode fails
       }
 
+      if (!url || (!url.includes("http://") && !url.includes("https://"))) {
+        continue;
+      }
+
+      // First, extract actual URL from Google redirect URLs (google.com/url?...&url=ACTUAL)
+      // This must happen BEFORE filtering, otherwise we lose the actual article URLs
+      if (url.includes("google.com/url")) {
+        const googleUrlMatch = url.match(/[?&]url=(https?:\/\/[^&]+)/);
+        if (googleUrlMatch) {
+          try {
+            const extractedUrl = decodeURIComponent(googleUrlMatch[1]);
+            if (!urls.includes(extractedUrl)) {
+              urls.push(extractedUrl);
+            }
+          } catch {
+            // Skip if decode fails
+          }
+        }
+        continue; // Don't add the google.com/url itself
+      }
+
       // Filter out Google tracking URLs and non-article links
       if (
-        url &&
-        !url.includes("google.com/alerts") &&
-        !url.includes("google.com/url") &&
-        !url.includes("support.google.com") &&
-        !url.includes("accounts.google.com") &&
-        !url.includes("unsubscribe") &&
-        !url.includes("preferences") &&
-        (url.includes("http://") || url.includes("https://"))
+        url.includes("google.com/alerts") ||
+        url.includes("support.google.com") ||
+        url.includes("accounts.google.com") ||
+        url.includes("unsubscribe") ||
+        url.includes("preferences")
       ) {
-        // Extract actual URL from Google redirect if present
-        const googleUrlMatch = url.match(/url=(https?:\/\/[^&]+)/);
-        if (googleUrlMatch) {
-          urls.push(decodeURIComponent(googleUrlMatch[1]));
-        } else if (!urls.includes(url)) {
-          urls.push(url);
-        }
+        continue;
+      }
+
+      // Add the URL if not already present
+      if (!urls.includes(url)) {
+        urls.push(url);
       }
     }
   }
