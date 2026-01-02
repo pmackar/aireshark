@@ -23,13 +23,13 @@ export interface ExtractedArticle {
   acquisitions: ExtractedAcquisition[];
 }
 
-const EXTRACTION_PROMPT = `You are an expert at extracting structured data about private equity acquisitions in the HVAC (heating, ventilation, air conditioning), plumbing, and electrical services industry.
+const EXTRACTION_PROMPT = `You are an expert at extracting structured data about private equity acquisitions and mergers in the HVAC (heating, ventilation, air conditioning), plumbing, and electrical services industry.
 
 Analyze the following article text and extract:
 1. Any PE firm names mentioned (e.g., Apex Service Partners, Alpine Investors, Wrench Group, Redwood Services, Kohlberg, Gridiron Capital)
-2. Any HVAC/plumbing/electrical company names that were acquired or are being discussed
-3. Acquisition details if present (date, amount, location)
-4. Whether this article is relevant to PE activity in the HVAC industry
+2. Any HVAC/plumbing/electrical company names that were acquired, merged, or are being discussed
+3. Acquisition or merger details if present (date, amount, location)
+4. Whether this article is relevant to PE activity or M&A (mergers and acquisitions) in the HVAC industry
 
 Return your response as JSON in this exact format:
 {
@@ -172,9 +172,10 @@ Return JSON: { "isRelevant": true/false, "confidence": 0-100 }
 
 Relevant topics include:
 - PE firm acquisitions of HVAC/plumbing/electrical companies
-- HVAC company mergers and acquisitions
+- HVAC company mergers and acquisitions (including "merge", "merger", "merged with")
 - Home services industry consolidation
 - PE-backed platforms in residential services
+- Any company combining, merging, or joining with another in the HVAC/plumbing/electrical space
 
 Not relevant:
 - General HVAC product news

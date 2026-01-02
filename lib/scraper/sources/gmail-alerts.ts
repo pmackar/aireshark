@@ -36,6 +36,13 @@ interface GmailAlertResult {
   emailsProcessed: number;
   articlesFound: number;
   articlesStored: number;
+  skipReasons: {
+    duplicate: number;
+    scrape_failed: number;
+    not_relevant: number;
+    extraction_failed: number;
+    error: number;
+  };
   errors: string[];
 }
 
@@ -213,7 +220,7 @@ async function fetchAlertEmails(
 async function processAlertUrl(
   url: string,
   alertSubject: string
-): Promise<boolean> {
+): Promise<{ stored: boolean; reason: string }> {
   try {
     // Check if already processed
     const existing = await prisma.article.findUnique({
@@ -221,14 +228,15 @@ async function processAlertUrl(
     });
 
     if (existing) {
-      return false;
+      console.log(`[Gmail] SKIP duplicate: ${url.slice(0, 60)}...`);
+      return { stored: false, reason: "duplicate" };
     }
 
     // Scrape the article
     const pageContent = await scrapePageContent(url);
     if (!pageContent) {
-      console.log(`[Gmail] Failed to scrape: ${url}`);
-      return false;
+      console.log(`[Gmail] SKIP scrape failed: ${url.slice(0, 60)}...`);
+      return { stored: false, reason: "scrape_failed" };
     }
 
     // Quick relevance check
@@ -237,14 +245,15 @@ async function processAlertUrl(
     const relevance = await classifyArticleRelevance(title, snippet);
 
     if (!relevance.isRelevant || relevance.confidence < 40) {
-      console.log(`[Gmail] Not relevant: ${title.slice(0, 50)}...`);
-      return false;
+      console.log(`[Gmail] SKIP not relevant (${relevance.confidence}%): ${title.slice(0, 50)}...`);
+      return { stored: false, reason: "not_relevant" };
     }
 
     // Extract structured data
     const extracted = await extractFromArticle(pageContent.content, url);
     if (!extracted || !extracted.isRelevant) {
-      return false;
+      console.log(`[Gmail] SKIP extraction failed or not relevant: ${title.slice(0, 50)}...`);
+      return { stored: false, reason: "extraction_failed" };
     }
 
     // Find matching platform or PE firm
@@ -288,7 +297,7 @@ async function processAlertUrl(
       },
     });
 
-    console.log(`[Gmail] Stored: ${(extracted.title || title).slice(0, 50)}...`);
+    console.log(`[Gmail] STORED: ${(extracted.title || title).slice(0, 50)}...`);
 
     // Process acquisitions
     for (const acq of extracted.acquisitions) {
@@ -297,10 +306,10 @@ async function processAlertUrl(
       }
     }
 
-    return true;
+    return { stored: true, reason: "success" };
   } catch (error) {
-    console.error(`[Gmail] Error processing ${url}:`, error);
-    return false;
+    console.error(`[Gmail] SKIP error processing ${url}:`, error);
+    return { stored: false, reason: "error" };
   }
 }
 
@@ -457,6 +466,13 @@ export async function runGmailAlertsScraper(): Promise<GmailAlertResult> {
     emailsProcessed: 0,
     articlesFound: 0,
     articlesStored: 0,
+    skipReasons: {
+      duplicate: 0,
+      scrape_failed: 0,
+      not_relevant: 0,
+      extraction_failed: 0,
+      error: 0,
+    },
     errors: [],
   };
 
@@ -481,9 +497,11 @@ export async function runGmailAlertsScraper(): Promise<GmailAlertResult> {
       result.articlesFound += alert.urls.length;
 
       for (const url of alert.urls) {
-        const stored = await processAlertUrl(url, alert.subject);
+        const { stored, reason } = await processAlertUrl(url, alert.subject);
         if (stored) {
           result.articlesStored++;
+        } else if (reason in result.skipReasons) {
+          result.skipReasons[reason as keyof typeof result.skipReasons]++;
         }
 
         // Rate limiting between URLs
@@ -503,6 +521,9 @@ export async function runGmailAlertsScraper(): Promise<GmailAlertResult> {
 
   console.log(
     `[Gmail] Complete: ${result.emailsProcessed} emails, ${result.articlesFound} URLs, ${result.articlesStored} stored`
+  );
+  console.log(
+    `[Gmail] Skip reasons: duplicate=${result.skipReasons.duplicate}, not_relevant=${result.skipReasons.not_relevant}, scrape_failed=${result.skipReasons.scrape_failed}, extraction_failed=${result.skipReasons.extraction_failed}, error=${result.skipReasons.error}`
   );
 
   return result;
