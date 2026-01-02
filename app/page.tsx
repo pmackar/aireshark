@@ -83,10 +83,11 @@ export default async function Home() {
       <section className="py-20">
         <div className="max-w-[980px] mx-auto px-6">
           <div className="glass-premium p-10 md:p-14">
+            <p className="text-[13px] text-[#86868b] font-medium text-center mb-8 tracking-wide uppercase">Tracking</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-              <StatCard value={platformCount.toString()} label="Tracking Platforms" />
-              <StatCard value={brandCount.toString()} label="Tracking Brands" />
-              <StatCard value={acquisitionCount.toString()} label="Tracking Deals" />
+              <StatCard value={platformCount.toString()} label="Platforms" />
+              <StatCard value={brandCount.toString()} label="Brands" />
+              <StatCard value={acquisitionCount.toString()} label="Deals" />
               <StatCard value="HVAC" label="Industry" isText />
             </div>
           </div>
