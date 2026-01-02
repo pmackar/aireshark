@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import prisma from "@/lib/db";
 import { getUserFromSession } from "@/lib/auth";
 import GatedContent from "@/components/auth/GatedContent";
+import AddToWatchlistButton from "@/components/watchlist/AddToWatchlistButton";
+import AddToPipelineButton from "@/components/pipeline/AddToPipelineButton";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +118,12 @@ export default async function PlatformDetailPage({ params }: PageProps) {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {isAuthenticated && (
+                <>
+                  <AddToWatchlistButton entityType="platform" entityId={platform.id} />
+                  <AddToPipelineButton entityType="platform" entityId={platform.id} />
+                </>
+              )}
               {platform.website && (
                 <a
                   href={platform.website.startsWith("http") ? platform.website : `https://${platform.website}`}
