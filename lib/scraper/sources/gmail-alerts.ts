@@ -1,5 +1,5 @@
 import { google, gmail_v1 } from "googleapis";
-import { scrapePageContent } from "../browser";
+import { scrapePageContentLite } from "../browser";
 import { extractFromArticle, classifyArticleRelevance } from "../extractor";
 import prisma from "@/lib/db";
 
@@ -232,8 +232,8 @@ async function processAlertUrl(
       return { stored: false, reason: "duplicate" };
     }
 
-    // Scrape the article
-    const pageContent = await scrapePageContent(url);
+    // Scrape the article using lightweight fetch-based scraper (works in serverless)
+    const pageContent = await scrapePageContentLite(url);
     if (!pageContent) {
       console.log(`[Gmail] SKIP scrape failed: ${url.slice(0, 60)}...`);
       return { stored: false, reason: "scrape_failed" };

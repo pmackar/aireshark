@@ -1,4 +1,5 @@
 import puppeteer, { Browser, Page } from "puppeteer";
+import * as cheerio from "cheerio";
 
 let browserInstance: Browser | null = null;
 
@@ -104,4 +105,94 @@ export async function scrapeMultiplePages(
   }
 
   return results;
+}
+
+/**
+ * Lightweight fetch-based scraper that works in serverless environments (Vercel)
+ * Falls back from Puppeteer which requires a browser runtime
+ */
+export async function scrapePageContentLite(url: string): Promise<{
+  title: string;
+  content: string;
+  html: string;
+} | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.log(`[Scraper-Lite] HTTP ${response.status} for ${url}`);
+      return null;
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    // Remove unwanted elements
+    $(
+      "script, style, nav, header, footer, aside, .sidebar, .advertisement, .ad, .social-share, .comments, .related-posts, noscript"
+    ).remove();
+
+    // Extract title
+    const title =
+      $("title").text().trim() ||
+      $('meta[property="og:title"]').attr("content") ||
+      $("h1").first().text().trim() ||
+      "";
+
+    // Try to find main content area
+    let content = "";
+    const contentSelectors = [
+      "article",
+      "main",
+      ".content",
+      ".post-content",
+      ".article-body",
+      ".entry-content",
+      ".post-body",
+      '[role="main"]',
+      "#content",
+      ".story-body",
+    ];
+
+    for (const selector of contentSelectors) {
+      const element = $(selector);
+      if (element.length > 0) {
+        content = element.text().replace(/\s+/g, " ").trim();
+        if (content.length > 200) break; // Found substantial content
+      }
+    }
+
+    // Fallback to body if no content found
+    if (!content || content.length < 200) {
+      content = $("body").text().replace(/\s+/g, " ").trim();
+    }
+
+    // Truncate extremely long content
+    if (content.length > 50000) {
+      content = content.slice(0, 50000);
+    }
+
+    return { title, content, html };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.log(`[Scraper-Lite] Timeout for ${url}`);
+    } else {
+      console.error(`[Scraper-Lite] Error scraping ${url}:`, error);
+    }
+    return null;
+  }
 }

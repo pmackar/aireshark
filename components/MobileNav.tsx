@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const navLinks = [
+interface NavLink {
+  href: string;
+  label: string;
+  authRequired?: boolean;
+}
+
+const navLinks: NavLink[] = [
   { href: "/firms", label: "Platforms" },
   { href: "/brands", label: "Brands" },
   { href: "/articles", label: "Articles" },
@@ -46,11 +52,14 @@ export default function MobileNav() {
     router.refresh();
   }
 
+  // Filter links based on auth status
+  const visibleLinks = navLinks.filter((link) => !link.authRequired || user);
+
   return (
     <>
       {/* Desktop Nav */}
       <div className="hidden md:flex items-center gap-8">
-        {navLinks.map((link) => (
+        {visibleLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -102,7 +111,7 @@ export default function MobileNav() {
         <div className="absolute top-12 left-0 right-0 bg-white/95 backdrop-blur-xl border-b border-black/[0.04] md:hidden">
           <div className="max-w-[980px] mx-auto px-6 py-4">
             <div className="flex flex-col gap-4">
-              {navLinks.map((link) => (
+              {visibleLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

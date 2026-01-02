@@ -201,7 +201,7 @@ export async function runGmailScrapeOnly(): Promise<{
 
 // Export individual components for use elsewhere
 export { extractFromArticle, classifyArticleRelevance } from "./extractor";
-export { scrapePageContent } from "./browser";
+export { scrapePageContent, scrapePageContentLite } from "./browser";
 export { updateFirmPortfolio } from "./sources/portfolio";
 export { runRssFeedScraper } from "./sources/rss-feeds";
 export { runPlatformMonitor, monitorPlatform } from "./sources/platform-monitor";

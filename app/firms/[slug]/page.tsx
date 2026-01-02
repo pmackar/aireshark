@@ -115,16 +115,18 @@ export default async function PlatformDetailPage({ params }: PageProps) {
                 </p>
               )}
             </div>
-            {platform.website && (
-              <a
-                href={platform.website.startsWith("http") ? platform.website : `https://${platform.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary text-[15px] py-2.5 px-5"
-              >
-                Visit Website →
-              </a>
-            )}
+            <div className="flex items-center gap-3">
+              {platform.website && (
+                <a
+                  href={platform.website.startsWith("http") ? platform.website : `https://${platform.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary text-[15px] py-2.5 px-5"
+                >
+                  Visit Website →
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </section>

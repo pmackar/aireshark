@@ -76,16 +76,18 @@ export default async function BrandDetailPage({ params }: PageProps) {
               <p className="text-gray-500 mt-1">{brand.location}</p>
             )}
           </div>
-          {brand.website && (
-            <a
-              href={brand.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-            >
-              Visit Website →
-            </a>
-          )}
+          <div className="flex items-center gap-3">
+            {brand.website && (
+              <a
+                href={brand.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Visit Website →
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
