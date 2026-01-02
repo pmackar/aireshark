@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { scrapePageContent } from "../browser";
+import { scrapePageContentLite } from "../browser";
 import { extractFromArticle, classifyArticleRelevance } from "../extractor";
 import prisma from "@/lib/db";
 
@@ -16,11 +16,12 @@ interface RssFeedConfig {
   sourceType: "rss_news" | "rss_press";
 }
 
-// RSS feeds for HVAC industry news
+// RSS feeds for HVAC industry news and M&A press releases
 const RSS_FEEDS: RssFeedConfig[] = [
+  // HVAC Trade Publications
   {
-    name: "ACHR News - Main",
-    url: "https://www.achrnews.com/rss/16",
+    name: "ACHR News - Business",
+    url: "https://www.achrnews.com/rss/topic/2240",
     sourceType: "rss_news",
   },
   {
@@ -29,19 +30,26 @@ const RSS_FEEDS: RssFeedConfig[] = [
     sourceType: "rss_news",
   },
   {
-    name: "ACHR News - Business",
-    url: "https://www.achrnews.com/rss/topic/2240",
+    name: "Contracting Business",
+    url: "https://www.contractingbusiness.com/rss",
     sourceType: "rss_news",
   },
-  {
-    name: "PM Magazine - Main",
-    url: "https://www.pmmag.com/rss/17",
-    sourceType: "rss_news",
-  },
+  // Plumbing Trade
   {
     name: "PM Magazine - Plumbing News",
     url: "https://www.pmmag.com/rss/topic/2650-plumbing-news",
     sourceType: "rss_news",
+  },
+  // Press Release Services (M&A announcements)
+  {
+    name: "Business Wire - M&A",
+    url: "https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeGVtXWw==",
+    sourceType: "rss_press",
+  },
+  {
+    name: "PR Newswire - M&A",
+    url: "https://www.prnewswire.com/rss/financial-services-latest-news/mergers-and-acquisitions-list.rss",
+    sourceType: "rss_press",
   },
 ];
 
@@ -99,8 +107,8 @@ export async function processRssItem(
 
     console.log(`[RSS] Processing relevant article: ${item.title.slice(0, 60)}...`);
 
-    // Scrape full article content
-    const pageContent = await scrapePageContent(item.link);
+    // Scrape full article content (using lightweight fetch for serverless)
+    const pageContent = await scrapePageContentLite(item.link);
     if (!pageContent) {
       console.log(`[RSS] Failed to scrape: ${item.link}`);
       return false;
@@ -356,8 +364,8 @@ export async function runRssFeedScraper(): Promise<{
 
       console.log(`[RSS] Found ${items.length} items in ${feed.name}`);
 
-      // Process each item (limit to recent 20 to avoid overload)
-      const recentItems = items.slice(0, 20);
+      // Process each item (limit to 5 per feed for serverless timeout)
+      const recentItems = items.slice(0, 5);
 
       for (const item of recentItems) {
         const stored = await processRssItem(item, feed.name);
@@ -366,8 +374,8 @@ export async function runRssFeedScraper(): Promise<{
           totalStored++;
         }
 
-        // Rate limiting between articles
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Minimal delay between articles
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       // Log result
@@ -381,8 +389,8 @@ export async function runRssFeedScraper(): Promise<{
 
     feedResults.push(result);
 
-    // Rate limiting between feeds
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Minimal delay between feeds
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   console.log(`[RSS] Complete: Found ${totalFound}, Stored ${totalStored}`);
