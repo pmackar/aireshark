@@ -19,10 +19,12 @@ model PrivateEquityFirm {
   foundedYear           Int?
   assetsUnderManagement String?  // e.g., "$5B+"
 
-  platforms    Platform[]
-  brands       Brand[]
-  acquisitions Acquisition[]
-  articles     Article[]
+  platforms      Platform[]
+  brands         Brand[]
+  acquisitions   Acquisition[]
+  articles       Article[]
+  watchlistItems WatchlistItem[]
+  pipelineItems  PipelineItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,10 +55,12 @@ model Platform {
   privateEquityFirm   PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id])
   privateEquityFirmId String?
 
-  brands       Brand[]
-  acquisitions Acquisition[]
-  articles     Article[]
-  scrapeSources ScrapeSource[]
+  brands         Brand[]
+  acquisitions   Acquisition[]
+  articles       Article[]
+  scrapeSources  ScrapeSource[]
+  watchlistItems WatchlistItem[]
+  pipelineItems  PipelineItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -93,8 +97,10 @@ model Brand {
   platform   Platform? @relation(fields: [platformId], references: [id])
   platformId String?
 
-  acquisitions Acquisition[]
-  articles     Article[]
+  acquisitions   Acquisition[]
+  articles       Article[]
+  watchlistItems WatchlistItem[]
+  pipelineItems  PipelineItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -218,6 +224,9 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   sessions         Session[]
+  watchlistItems   WatchlistItem[]
+  pipelines        Pipeline[]
+  pipelineItems    PipelineItem[]
 
   @@index([email])
   @@index([subscriptionTier])
@@ -235,4 +244,80 @@ model Session {
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+}
+
+// Watchlist - tracks what entities a user is watching
+model WatchlistItem {
+  id                  String   @id @default(cuid())
+  userId              String
+  privateEquityFirmId String?
+  platformId          String?
+  brandId             String?
+  notes               String?  @db.Text
+  emailOnNewArticle   Boolean  @default(true)
+  emailOnAcquisition  Boolean  @default(true)
+  addedAt             DateTime @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  privateEquityFirm PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id], onDelete: Cascade)
+  platform          Platform?          @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  brand             Brand?             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, privateEquityFirmId])
+  @@unique([userId, platformId])
+  @@unique([userId, brandId])
+  @@index([userId])
+}
+
+// Pipeline - custom user-created lists
+model Pipeline {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?  @db.Text
+  color       String?
+  position    Int      @default(0)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items PipelineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// PipelineItem - entities within a pipeline
+model PipelineItem {
+  id                  String   @id @default(cuid())
+  pipelineId          String
+  userId              String
+  privateEquityFirmId String?
+  platformId          String?
+  brandId             String?
+  status              String   @default("watching")
+  priority            String?
+  notes               String?  @db.Text
+  position            Int      @default(0)
+  statusChangedAt     DateTime @default(now())
+  addedAt             DateTime @default(now())
+
+  pipeline          Pipeline           @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  privateEquityFirm PrivateEquityFirm? @relation(fields: [privateEquityFirmId], references: [id], onDelete: Cascade)
+  platform          Platform?          @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  brand             Brand?             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pipelineId, privateEquityFirmId])
+  @@unique([pipelineId, platformId])
+  @@unique([pipelineId, brandId])
+  @@index([pipelineId])
+  @@index([userId])
+  @@index([status])
 }

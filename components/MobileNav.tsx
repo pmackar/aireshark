@@ -14,6 +14,8 @@ const navLinks: NavLink[] = [
   { href: "/firms", label: "Platforms" },
   { href: "/brands", label: "Brands" },
   { href: "/articles", label: "Articles" },
+  { href: "/watchlist", label: "Watchlist", authRequired: true },
+  { href: "/pipelines", label: "Pipelines", authRequired: true },
   { href: "/admin", label: "Admin" },
 ];
 
